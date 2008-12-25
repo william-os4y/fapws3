@@ -1,0 +1,5 @@
+1) Create your Django project, for example: django-admin.py startproject mysite.
+2) Define your Django variable, for example: export DJANGO_SETTINGS_MODULE=mysite.settings
+That's it!!!!! Execute run.py and your Django application will run.
+
+This has been tested with Django-0.96 on a Linux system.

@@ -1,0 +1,26 @@
+How to install fapws?
+=====================
+
+Pre-requisit:
+-------------
+
+Libev:
+- You must have libev installed.
+- sources can be found here: http://software.schmorp.de/pkg/libev.html
+Has been tested with Libev-3.49 on Linux and FreeBSD
+
+Python:
+- Python >=2.4. This has been developped and tested on python 2.4 and Python 2.6.
+ 
+WARNING:
+To avoid conflicts with the previous version (called Fapws2), better to remove it before installation of the new one. 
+
+Install fapws:
+--------------
+
+- execute: python setup.py install
+
+That's it ;-). 
+
+Have fun with Fapws. 
+William
