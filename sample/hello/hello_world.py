@@ -40,10 +40,14 @@ def start():
             f=["Page not found"]
         start_response('200 OK', [('Content-Type','text/html')])
         return f
-        
+    def iteration(environ, start_response):
+        start_response('200 OK', [('Content-Type','text/html')])
+        elems=["hello", " ","worlds!!"]
+        return iter(elems)        
 
     
     evwsgi.wsgi_cb(("/hello", hello))
+    evwsgi.wsgi_cb(("/iterhello", iteration))
     evwsgi.wsgi_cb(("/longzipped", staticlongzipped))
     evwsgi.wsgi_cb(("/long", staticlong))
     evwsgi.wsgi_cb(("/short", staticshort))

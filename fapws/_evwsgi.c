@@ -677,19 +677,26 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             cli->response_iter_sent++; //-1: header sent
         }
     } else {
-        if (PyList_Check(cli->response_content)) {  //we treat list object
+        if (PyList_Check(cli->response_content)) //we treat list object
+        {
             cli->response_iter_sent++;
             if (cli->response_iter_sent<PyList_Size(cli->response_content)) 
             {
                 PyObject *pydummy = PyList_GetItem(cli->response_content, cli->response_iter_sent);
                 char *buff;
                 Py_ssize_t buflen;
-                PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen);
-                if (write_cli(cli, buff, buflen, revents)==0)
+                if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
                 {
-                    cli->response_iter_sent=PyList_Size(cli->response_content);  //break the for loop
+                    // if this is a readable buffer, we send it. Other else, we ignore it.
+                    if (write_cli(cli, buff, buflen, revents)==0)
+                    {
+                        cli->response_iter_sent=PyList_Size(cli->response_content);  //break the for loop
+                    }
                 }
-            }
+                else
+                {
+                    printf("The item %i of your list is not a string!!!!  It will be skipped\n",cli->response_iter_sent);
+                }            }
             else // all iterations has been sent
             {
                 stop=2;
@@ -716,11 +723,38 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 }
                 if ((int)len<MAX_BUFF)
                 {
-                    //we have send all the file
+                    //we have send the whole file
                     stop=2;
                 }
             }
             //free(buff);
+        } 
+        else if (PyIter_Check(cli->response_content)) //we treat Iterator object
+        {
+            cli->response_iter_sent++;
+            PyObject *pyelem = PyIter_Next(cli->response_content);
+            if (pyelem == NULL) 
+            {
+                stop = 2;
+            }
+            else 
+            {
+                char *buff;
+                Py_ssize_t buflen;
+                if (PyObject_AsReadBuffer(pyelem, (const void **) &buff, &buflen)==0)
+                {
+                    // if this is a readable buffer, we send it. Other else, we ignore it.
+                    if (write_cli(cli, buff, buflen, revents)==0)
+                    {
+                        stop=2;  //break the iterator loop
+                    }
+                }
+                else
+                {
+                    printf("The item %i of your iterator is not a string!!!!  It will be skipped\n",cli->response_iter_sent);
+                }
+                Py_DECREF(pyelem);
+            }    
         } 
         else 
         {
@@ -993,7 +1027,7 @@ Procedure exposed in Python to provide extension's version
 static PyObject *
 py_version(PyObject *self, PyObject *args)
 {
-    PyObject *pyres=Py_BuildValue("s", "0.1");
+    PyObject *pyres=Py_BuildValue("s", "3.b.0");
     return pyres;
 }
 
