@@ -1,1 +1,3 @@
 build/*
+dist/*
+fapws3.egg-info/*
