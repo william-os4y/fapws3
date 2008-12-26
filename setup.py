@@ -1,31 +1,43 @@
-# copy these lines to a file named: setup.py
-# To build and install the elemlist module you need the following
-# setup.py file that uses the distutils:
-from distutils.core import setup, Extension
+from distutils.core import setup, find_packages, Extension
 import os
-import os.path 
 import sys
 
-setup (name = "fapws3",
-       version = "0.1",
-       maintainer = "William",
-       maintainer_email = "william.os4y@gmail.com",
-       description = "FAPWS Python module",
-       packages= ['fapws','fapws/contrib'],
+def read_file(name):
+    return open(os.path.join(os.path.dirname(__file__),name)).read()
 
-       ext_modules = [
-	       Extension('fapws._evwsgi',
-	       sources=['fapws/_evwsgi.c'],
-           # I'm on an archlinux ;-)
-           # Here I'm pointing to the direcoty where libevent has been build
-           # In this directory wi can find sources and compiled objects (as after a "./configure; make")
-	       #include_dirs=["/usr/include"],
-	       #library_dirs=["/usr/local/lib"], # add LD_RUN_PATH in your environment
-	       libraries=['ev'],
-           #extra_compile_args=["-ggdb"],
-           #define_macros=[("DEBUG", "1")],
-	       )
-	       ]
-)
+readme = read_file('README')
+
+setup(name='fapws3',
+      version="0.1",
+      description="Fast Asynchronous Python Web Server",
+      long_description=readme,
+classifiers=['Development Status :: 4 - Beta','Environment :: Web Environment','License :: OSI Approved :: GNU General Public License (GPL)','Programming Language :: C','Programming Language :: Python','Topic :: Internet :: WWW/HTTP :: HTTP Servers','Topic :: Internet :: WWW/HTTP :: WSGI :: Server'], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+      keywords='',
+      author='William',
+      author_email='william.os4y@gmail.com',
+      url='http://william-os4y.livejournal.com/',
+      license='GPL',
+      include_package_data=True,
+      zip_safe=False,
+      install_requires=[
+          # -*- Extra requirements: -*-
+      ],
+      entry_points="""
+      # -*- Entry points: -*-
+      """,
+
+      packages= find_packages(),
+      ext_modules = [
+          Extension('fapws._evwsgi',
+                  sources=['fapws/_evwsgi.c'],
+                  #include_dirs=["/usr/include"],
+                  #library_dirs=["/usr/local/lib"], # add LD_RUN_PATH in your environment
+                  libraries=['ev'],
+                  #extra_compile_args=["-ggdb"],
+                  #define_macros=[("DEBUG", "1")],
+                  )
+                  ]
+      )
+
 
 # end of file: setup.py
