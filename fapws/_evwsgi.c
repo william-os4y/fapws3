@@ -294,7 +294,8 @@ header_to_dict(struct client *cli)
         if (strlen(buff2)>0)
         { 
             transform_header_key_to_wsgi_key(buff2, head);
-            value +=1; // remove the first blank char
+            if (*value==' ')
+                 value +=1; // remove the first blank char
             pyval = Py_BuildValue("s", value );
             PyDict_SetItemString(pydict, head, pyval);
             Py_DECREF(pyval);
