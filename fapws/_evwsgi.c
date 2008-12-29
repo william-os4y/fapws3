@@ -5,7 +5,6 @@
 #include <fcntl.h>   //for setnonblocking 
 #include <stddef.h>  //for the offset command
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -193,6 +192,31 @@ parse_query(char * uri)
 }
 
 /*
+this procefure remove spaces and tabs who could lead or end a string
+*/
+char * remove_leading_and_trailing_spaces(char* s)
+{ 
+    int start=0;
+    int end=(int)strlen(s);
+  
+    //remove trailing blanks
+    while(end>0 && (s[end-1]==' ' || s[end-1]=='\t'))
+    {
+        end--;
+    }
+    s[end]='\0';
+    //remove leading blanks
+    while(start<end && (*s==' ' || *s=='\t'))
+    {
+        s++;
+        start++;
+    }
+    return s;
+}
+
+
+
+/*
 This procedure transform the header to something required by wsgi.
 */
 void transform_header_key_to_wsgi_key(char *src, char *dest) {
@@ -287,15 +311,15 @@ header_to_dict(struct client *cli)
         value=strsep(&buff1, "\n");
         if (!value)
             break;
-        buff2=strsep(&value, ":"); // the firt ":" delimit the header and the value
+        buff2=strsep(&value, ":"); // the first ":" delimit the header and the value
         if (!buff2)
             break;
         //printf("buff1:%s***\n", buff1);
         if (strlen(buff2)>0)
         { 
+            buff2=remove_leading_and_trailing_spaces(buff2);
             transform_header_key_to_wsgi_key(buff2, head);
-            if (*value==' ')
-                 value +=1; // remove the first blank char
+            value=remove_leading_and_trailing_spaces(value);
             pyval = Py_BuildValue("s", value );
             PyDict_SetItemString(pydict, head, pyval);
             Py_DECREF(pyval);
