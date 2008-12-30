@@ -691,6 +691,7 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
     if (cli->response_iter_sent==-2)
     { 
+        //we must send an header or an error
         if ((ret=python_handler(cli))==0) //look for python callback and execute it
         {
             //uri not found
@@ -706,11 +707,13 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         }
         else
         {
-            //uri found
+            //uri found, we thus send the html header 
             write_cli(cli, cli->response_header, strlen(cli->response_header), revents);
             cli->response_iter_sent++; //-1: header sent
         }
-    } else {
+    } 
+    else if (strcmp(cli->cmd,"GET")==0 || strcmp(cli->cmd,"POST")==0) 
+    {
         if (PyList_Check(cli->response_content)) //we treat list object
         {
             cli->response_iter_sent++;
@@ -796,7 +799,12 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             //PyErr_SetString(PyExc_TypeError, "Result must be a list or a fileobject");
             stop=1;
         }
-    }// end of response_iter_sent >-2 
+    }// end of GET OR POST request
+    else if (strcmp(cli->cmd,"HEAD")==0)
+    {
+        //we don't send additonal data for a HEAD command
+        stop=2;
+    }
     if (stop==2)
     {
         if (PyObject_HasAttrString(cli->response_content, "close"))
