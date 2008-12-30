@@ -497,7 +497,8 @@ manage_header_body(struct client *cli, PyObject *pyenviron)
 /*
 This is the main python handler that will transform and treat the client html request. 
 return 1 if we have found a python object to treat the requested uri
-return 1 if not (page not found)
+return 0 if not (page not found)
+return -1 in case of problem
 */
 static int 
 python_handler(struct client *cli)
@@ -525,7 +526,7 @@ python_handler(struct client *cli)
     if (pydict==Py_None)
     {
         Py_DECREF(pyenviron);
-        return 0;
+        return -1;
     }
     update_environ(pyenviron, pydict, "update_headers");
     Py_DECREF(pydict);   
@@ -580,7 +581,8 @@ python_handler(struct client *cli)
         cli->response_header=PyString_AsString(pydummy);
         Py_DECREF(pydummy);
     }
-    else
+    else 
+    //python call return is NULL
     {
         printf("Python error\n");
         cli->response_header="HTTP/1.1 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n";
@@ -685,16 +687,23 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 { 
     char *response;
     int stop=0; //0: not stop, 1: stop, 2: stop and call tp close
+    int ret; //python_handler return
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
     if (cli->response_iter_sent==-2)
     { 
-        if (python_handler(cli)!=1) //look for python callback and execute it
+        if ((ret=python_handler(cli))==0) //look for python callback and execute it
         {
             //uri not found
             response="HTTP/1.1 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
-        } 
+        } else if (ret==-1)
+        {
+            //problem to parse the request
+            response="HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n<html><head><title>Bad request</head><body><p>Bad request!!!</p></body></html>";
+            write_cli(cli,response, strlen(response), revents);
+            stop=1;
+        }
         else
         {
             //uri found
