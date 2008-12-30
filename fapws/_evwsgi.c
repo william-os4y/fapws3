@@ -499,11 +499,12 @@ This is the main python handler that will transform and treat the client html re
 return 1 if we have found a python object to treat the requested uri
 return 0 if not (page not found)
 return -1 in case of problem
+return -2 in case the request command is not implemented
 */
 static int 
 python_handler(struct client *cli)
 {
-    PyObject *pydict;
+    PyObject *pydict, *pydummy;
 
     if (debug)
          printf("host=%s,port=%i:python_handler:HEADER:\n%s**\n", cli->remote_addr, cli->remote_port, cli->input_header);
@@ -530,8 +531,40 @@ python_handler(struct client *cli)
     }
     update_environ(pyenviron, pydict, "update_headers");
     Py_DECREF(pydict);   
-    //PyObject_Print(cli->wsgi_cb, stderr, 0);
-   //  3)find if the uri is registered
+    //  2bis) we check if the request method is supported
+    PyObject *pysupportedhttpcmd = PyObject_GetAttrString(py_base_module, "supported_HTTP_command");
+    pydummy = PyString_FromString(cli->cmd);
+    if (PySequence_Contains(pysupportedhttpcmd,pydummy)!=1)
+    {
+        //return not implemented 
+        Py_DECREF(pysupportedhttpcmd);
+        Py_DECREF(pydummy);
+        Py_DECREF(pyenviron);
+        return -2;
+    }
+    Py_DECREF(pydummy);
+    //  2ter) we treat directly the OPTIONS command
+    if (strcmp(cli->cmd,"OPTIONS")==0)
+    {
+        pydummy=PyString_FromString("HTTP/1.1 200 OK\r\nServer: fapws3/0.1\r\nAllow: ");
+        PyObject *pyitem; 
+        int index, max;
+        max = PyList_Size(pysupportedhttpcmd);
+        for (index=0; index<max; index++)
+        {
+            pyitem=PyList_GetItem(pysupportedhttpcmd, index);  // no need to decref pyitem
+            PyString_Concat(&pydummy, PyObject_Str(pyitem));
+            if (index<max-1)
+               PyString_Concat(&pydummy, PyString_FromString(", "));
+        }
+        PyString_Concat(&pydummy, PyString_FromString("\r\nContent-Length: 0\r\n\r\n"));
+        cli->response_header=PyString_AsString(pydummy);
+        cli->response_content=PyList_New(0);
+        Py_DECREF(pyenviron);
+        return 1;
+    }
+    Py_DECREF(pysupportedhttpcmd);
+    //  3)find if the uri is registered
     if (handle_uri(cli)!=1)
     {
          if (py_generic_cb==NULL)
@@ -698,10 +731,18 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             response="HTTP/1.1 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
-        } else if (ret==-1)
+        } 
+        else if (ret==-1)
         {
             //problem to parse the request
             response="HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n<html><head><title>Bad request</head><body><p>Bad request!!!</p></body></html>";
+            write_cli(cli,response, strlen(response), revents);
+            stop=1;
+        }
+        else if (ret==-2)
+        {
+            //problem to parse the request
+            response="HTTP/1.1 501 Not Implemented\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
@@ -712,8 +753,14 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             cli->response_iter_sent++; //-1: header sent
         }
     } 
-    else if (strcmp(cli->cmd,"GET")==0 || strcmp(cli->cmd,"POST")==0) 
+    else if (strcmp(cli->cmd,"HEAD")==0)
     {
+        //we don't send additonal data for a HEAD command
+        stop=2;
+    }
+    else 
+    {
+        //we let the python developer to manage other HTTP command
         if (PyList_Check(cli->response_content)) //we treat list object
         {
             cli->response_iter_sent++;
@@ -800,11 +847,6 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             stop=1;
         }
     }// end of GET OR POST request
-    else if (strcmp(cli->cmd,"HEAD")==0)
-    {
-        //we don't send additonal data for a HEAD command
-        stop=2;
-    }
     if (stop==2)
     {
         if (PyObject_HasAttrString(cli->response_content, "close"))

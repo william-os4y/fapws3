@@ -152,6 +152,8 @@ def redirectStdErr():
     """
     sys.stderr=StringIO.StringIO()
 
+supported_HTTP_command=["GET","POST","HEAD","OPTIONS"]
+
 if __name__=="__main__":
     try:
         r=1/0
