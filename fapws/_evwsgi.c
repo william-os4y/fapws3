@@ -768,8 +768,13 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             {
                 PyObject *pydummy = PyList_GetItem(cli->response_content, cli->response_iter_sent);
                 char *buff;
+#if (PY_VERSION_HEX < 0x02050000)
+                int buflen;
+                if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
+#else
                 Py_ssize_t buflen;
                 if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
+#endif
                 {
                     // if this is a readable buffer, we send it. Other else, we ignore it.
                     if (write_cli(cli, buff, buflen, revents)==0)
@@ -824,8 +829,13 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             else 
             {
                 char *buff;
+#if (PY_VERSION_HEX < 0x02050000)
+                int buflen;
+                if (PyObject_AsReadBuffer(pyelem, (const void **) &buff, &buflen)==0)
+#else
                 Py_ssize_t buflen;
                 if (PyObject_AsReadBuffer(pyelem, (const void **) &buff, &buflen)==0)
+#endif
                 {
                     // if this is a readable buffer, we send it. Other else, we ignore it.
                     if (write_cli(cli, buff, buflen, revents)==0)
