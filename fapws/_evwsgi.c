@@ -454,17 +454,19 @@ manage_header_body(struct client *cli, PyObject *pyenviron)
 {
     PyObject *pydummy; 
 
+    pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_LENGTH");
+    char *content_length_str = PyString_AsString(pydummy);
+    int content_length = atoi(content_length_str);
+    pydummy = PyInt_FromString(content_length_str, NULL, 10);
+    PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy); 
+    Py_DECREF(pydummy);
+
     PyObject *pystringio=PyDict_GetItemString(pyenviron, "wsgi.input");
     Py_INCREF(pystringio);
     PyObject *pystringio_write=PyObject_GetAttrString(pystringio, "write");
     Py_DECREF(pystringio);
-    pydummy=PyString_FromString(cli->input_body);
+    pydummy = PyBuffer_FromMemory(cli->input_body, content_length);
     PyObject_CallFunction(pystringio_write, "(O)", pydummy);
-#if (PY_VERSION_HEX < 0x02050000)
-    int pylen = PyString_Size(pydummy);
-#else
-    Py_ssize_t pylen=PyString_Size(pydummy);
-#endif
     Py_DECREF(pydummy);
     Py_DECREF(pystringio_write);
     PyObject *pystringio_seek=PyObject_GetAttrString(pystringio, "seek");
@@ -472,13 +474,7 @@ manage_header_body(struct client *cli, PyObject *pyenviron)
     PyObject_CallFunction(pystringio_seek, "(O)", pydummy);
     Py_DECREF(pydummy);
     Py_DECREF(pystringio_seek);
-#if (PY_VERSION_HEX < 0x02050000)
-    pydummy=Py_BuildValue("i", pylen);
-#else
-    pydummy=PyInt_FromSsize_t(pylen);
-#endif
-    PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy);
-    Py_DECREF(pydummy);
+
     //fapws.params cannot be done in case of multipart
     pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_TYPE");
     PyDict_SetItemString(pyenviron,"CONTENT_TYPE", pydummy);
@@ -912,9 +908,10 @@ static void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             cli->input_pos += r; 
             cli->input_header[cli->input_pos]='\0';
             if (debug)
-                printf("host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i, strlen input_header:%i\n", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r, (int)strlen (cli->input_header));
+                printf("host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i\n", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
             // if \r\n\r\n then end of header   
             cli->input_body=strstr(cli->input_header, "\r\n\r\n"); //use memmem ???
+            int header_lentgh =cli->input_body-cli->input_header;
             if (cli->input_body!=NULL)
             {
                 //if content-length
@@ -927,7 +924,7 @@ static void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 {
                     int bodylength=strtol(contentlenght+16, &err, 10);
                       //assure we have all body data
-                    if ((int)strlen(cli->input_body+4)==bodylength)
+                    if ((int)cli->input_pos==bodylength+4+header_lentgh)
                     {
                         read_finished=1;
                         cli->input_body+=4; // to skip the \r\n\r\n
