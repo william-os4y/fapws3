@@ -139,7 +139,7 @@ class Start_response:
             if key.upper() != "SET-COOKIE":
                 res += '%s: %s\r\n' % (key,val)
         if self.cookies:
-            res+=str(self.cookies)
+            res+=str(self.cookies)+"\r\n"
         res += "\r\n"
         return res
         
