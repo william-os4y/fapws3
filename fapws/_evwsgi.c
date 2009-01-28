@@ -101,7 +101,7 @@ void close_connection(struct client *cli)
     free(cli->protocol);
     free(cli->uri_path);
     //free(cli->response_header);
-    Py_XDECREF(cli->wsgi_cb);
+    //Py_XDECREF(cli->wsgi_cb);
     Py_XDECREF(cli->response_content);
     if (cli->response_fp){
         //free(cli->response_fp);
@@ -601,6 +601,7 @@ python_handler(struct client *cli)
     PyObject *pyarglist = Py_BuildValue("(OO)", pyenviron, pystart_response );
     cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
     Py_DECREF(pyarglist);
+    Py_XDECREF(cli->wsgi_cb);
     if (cli->response_content!=NULL) 
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
