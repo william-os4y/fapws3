@@ -40,7 +40,6 @@ struct client {
         char *input_body;
         size_t input_pos;
         int retry;
-        PyObject *headerdict;
         char *uri;
         char *cmd;
         char *protocol;
@@ -96,12 +95,10 @@ void close_connection(struct client *cli)
         printf("host=%s,port=%i close_connection:cli:%p, input_header:%p***\n",cli->remote_addr, cli->remote_port, cli, cli->input_header);
     free(cli->input_header);
     free(cli->cmd);
-    Py_XDECREF(cli->headerdict);
     free(cli->uri);
     free(cli->protocol);
     free(cli->uri_path);
     //free(cli->response_header);
-    //Py_XDECREF(cli->wsgi_cb);
     Py_XDECREF(cli->response_content);
     if (cli->response_fp){
         //free(cli->response_fp);
@@ -325,7 +322,6 @@ header_to_dict(struct client *cli)
             Py_DECREF(pyval);
         }
     }
-    cli->headerdict=pydict;
     free(head);  
     //free(buff1); // TODO ?? to verify !! why not free it ??
     free(cmd); 
@@ -972,7 +968,6 @@ static void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->fd=client_fd;
     cli->input_header=malloc(1*sizeof(char));  //will be free'd when we will close the connection
     cli->input_body=NULL;
-    cli->headerdict=NULL;
     cli->uri=NULL;
     cli->cmd=NULL;
     cli->protocol=NULL;
