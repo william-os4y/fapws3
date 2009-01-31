@@ -1120,6 +1120,18 @@ py_version(PyObject *self, PyObject *args)
 }
 
 /*
+Procedure exposed in Python to provide libev's ABI version
+*/
+static PyObject *
+py_libev_version(PyObject *self, PyObject *args)
+{
+    PyObject *pyres=Py_BuildValue("ii", ev_version_major(), ev_version_minor());
+    return pyres;
+}
+
+
+
+/*
 Procedure exposed in Python to register the "base" module
 */
 static PyObject *
@@ -1198,6 +1210,7 @@ static PyMethodDef EvhttpMethods[] = {
     {"parse_query", py_parse_query, METH_VARARGS, "parse query into dictionary"},
     {"set_debug", py_set_debug, METH_VARARGS, "Set the debug level"},
     {"get_debug", py_get_debug, METH_VARARGS, "Get the debug level"},
+    {"libev_version", py_libev_version, METH_VARARGS, "Get the libev's ABI version you are using"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 

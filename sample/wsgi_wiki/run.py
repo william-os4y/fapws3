@@ -44,6 +44,7 @@ def start():
     evwsgi.wsgi_cb(("/", index))
     #evhttp.gen_http_cb(generic)
     evwsgi.set_debug(0)    
+    print "libev ABI version:%i.%i" % evwsgi.libev_version()
     evwsgi.run()
     
 
