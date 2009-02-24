@@ -23,7 +23,7 @@
 
 #include <Python.h>
 
-#define BACKLOG 10     // how many pending connections queue will hold
+#define BACKLOG 1024     // how many pending connections queue will hold
 #define MAX_BUFF 4096 //32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 3   //number of connection retry
 
