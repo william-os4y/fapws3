@@ -26,6 +26,7 @@
 #define BACKLOG 1024     // how many pending connections queue will hold
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 3   //number of connection retry
+#define VERSION "0.2"
 
 /*
 Structure we use for each client's connection. 
@@ -538,7 +539,7 @@ python_handler(struct client *cli)
     //  2ter) we treat directly the OPTIONS command
     if (strcmp(cli->cmd,"OPTIONS")==0)
     {
-        pydummy=PyString_FromString("HTTP/1.1 200 OK\r\nServer: fapws3/0.1\r\nAllow: ");
+        pydummy=PyString_FromString("HTTP/1.1 200 OK\r\nServer: fapws3/" VERSION "\r\nAllow: ");
         PyObject *pyitem; 
         int index, max;
         max = PyList_Size(pysupportedhttpcmd);
@@ -611,7 +612,7 @@ python_handler(struct client *cli)
     //python call return is NULL
     {
         printf("Python error\n");
-        cli->response_header="HTTP/1.1 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n";
+        cli->response_header="HTTP/1.1 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n";
         if (PyErr_Occurred()) 
         { 
              //get_traceback();py_b
@@ -721,21 +722,21 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         if ((ret=python_handler(cli))==0) //look for python callback and execute it
         {
             //uri not found
-            response="HTTP/1.1 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>";
+            response="HTTP/1.1 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         } 
         else if (ret==-1)
         {
             //problem to parse the request
-            response="HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n<html><head><title>Bad request</head><body><p>Bad request!!!</p></body></html>";
+            response="HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Bad request</head><body><p>Bad request!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
         else if (ret==-2)
         {
             //problem to parse the request
-            response="HTTP/1.1 501 Not Implemented\r\nContent-Type: text/html\r\nServer: fapws3/0.1\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>";
+            response="HTTP/1.1 501 Not Implemented\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
