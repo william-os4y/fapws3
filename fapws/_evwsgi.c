@@ -24,7 +24,7 @@
 #include <Python.h>
 
 #define BACKLOG 1024     // how many pending connections queue will hold
-#define MAX_BUFF 4096 //32768  //read buffer size. bigger faster, but memory foot print bigger
+#define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 3   //number of connection retry
 
 /*
@@ -306,12 +306,11 @@ header_to_dict(struct client *cli)
     while (*buff1!='\n')
     {
         value=strsep(&buff1, "\n");
-        if (!value)
-            break;
+	if (!buff1)  //we have not found any \n
+              break;
         buff2=strsep(&value, ":"); // the first ":" delimit the header and the value
-        if (!buff2)
-            break;
-        //printf("buff1:%s***\n", buff1);
+        if (!value)  //we don't have found the ":"
+            continue;
         if (strlen(buff2)>0)
         { 
             buff2=remove_leading_and_trailing_spaces(buff2);
