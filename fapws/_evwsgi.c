@@ -26,7 +26,7 @@
 #define BACKLOG 1024     // how many pending connections queue will hold
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 3   //number of connection retry
-#define VERSION "0.2"
+#define VERSION "0.3"
 
 /*
 Structure we use for each client's connection. 
@@ -49,6 +49,7 @@ struct client {
         PyObject *wsgi_cb;
         int response_iter_sent; //-2: nothing sent, -1: header sent, 0-9999: iter sent
         char *response_header;
+	int response_header_length;
         PyObject *response_content;
         FILE *response_fp; // file of the sent file
 };
@@ -552,6 +553,7 @@ python_handler(struct client *cli)
         }
         PyString_Concat(&pydummy, PyString_FromString("\r\nContent-Length: 0\r\n\r\n"));
         cli->response_header=PyString_AsString(pydummy);
+	cli->response_header_length=strlen(cli->response_header);
         cli->response_content=PyList_New(0);
         Py_DECREF(pyenviron);
         return 1;
@@ -601,11 +603,13 @@ python_handler(struct client *cli)
     if (cli->response_content!=NULL) 
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
-        /*temp=PyString_AsString(pydummy);
+        /*char *temp=NULL;
+	temp=PyString_AsString(pydummy);
         Py_DECREF(pydummy);
         cli->response_header=(char *)calloc(strlen(temp)+1, sizeof(char));
         strcpy(cli->response_header, temp);*/
         cli->response_header=PyString_AsString(pydummy);
+	cli->response_header_length=strlen(cli->response_header);
         Py_DECREF(pydummy);
     }
     else 
@@ -613,6 +617,7 @@ python_handler(struct client *cli)
     {
         printf("Python error\n");
         cli->response_header="HTTP/1.1 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n";
+	cli->response_header_length=strlen(cli->response_header);
         if (PyErr_Occurred()) 
         { 
              //get_traceback();py_b
@@ -743,7 +748,7 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         else
         {
             //uri found, we thus send the html header 
-            write_cli(cli, cli->response_header, strlen(cli->response_header), revents);
+            write_cli(cli, cli->response_header, cli->response_header_length, revents);
             cli->response_iter_sent++; //-1: header sent
         }
     } 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 import datetime
 from Cookie import SimpleCookie, CookieError
@@ -141,7 +142,7 @@ class Start_response:
         if self.cookies:
             res+=str(self.cookies)+"\r\n"
         res += "\r\n"
-        return res
+        return str(res)
         
 def redirectStdErr():
     """
