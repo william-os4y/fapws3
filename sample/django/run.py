@@ -4,7 +4,7 @@ import fapws._evwsgi as evwsgi
 from fapws import base
 import time
 import sys
-sys.setcheckinterval=100000 # since we don't use threads, internal checks are no more required
+sys.setcheckinterval(100000) # since we don't use threads, internal checks are no more required
 from fapws.contrib import django_handler, views
 import django
 

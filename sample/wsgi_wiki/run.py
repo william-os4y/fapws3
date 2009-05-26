@@ -6,7 +6,7 @@ import fapws.base
 import fapws.contrib
 import fapws.contrib.views
 import sys
-sys.setcheckinterval=100000 # since we don't use threads, internal checks are no more required
+sys.setcheckinterval(100000) # since we don't use threads, internal checks are no more required
 
 import views
 

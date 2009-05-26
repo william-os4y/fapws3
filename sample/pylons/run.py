@@ -4,7 +4,7 @@ import paste.deploy
 import fapws._evwsgi as evwsgi
 from fapws import base
 import sys
-sys.setcheckinterval=100000 # since we don't use threads, internal checks are no more required
+sys.setcheckinterval(100000) # since we don't use threads, internal checks are no more required
 
 config_path = os.path.abspath(os.path.dirname(_args[0]))
 path = '%s/%s' % (config_path, 'development.ini')
