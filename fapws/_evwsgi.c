@@ -25,8 +25,8 @@
 
 #define BACKLOG 1024     // how many pending connections queue will hold
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
-#define MAX_RETRY 3   //number of connection retry
-#define VERSION "0.3"
+#define MAX_RETRY 9   //number of connection retry
+#define VERSION "0.4"
 
 /*
 Structure we use for each client's connection. 
@@ -693,7 +693,7 @@ static int write_cli(struct client *cli, char *response, size_t len,  int revent
                     fprintf(stderr, "Connection closed after %i retries\n", cli->retry);
                     return 0; //stop the watcher and close the connection
                     }
-                return 1;  //failed but we don't want to close the watcher
+                usleep(100000);  //failed but we don't want to close the watcher
             }
             if ((int)r==0)
             {

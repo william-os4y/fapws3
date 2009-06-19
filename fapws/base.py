@@ -155,6 +155,11 @@ def redirectStdErr():
 
 supported_HTTP_command=["GET","POST","HEAD","OPTIONS"]
 
+def split_len(seq, length):
+    return [seq[i:i+length] for i in range(0, len(seq), length)]
+
+
+
 if __name__=="__main__":
     try:
         r=1/0

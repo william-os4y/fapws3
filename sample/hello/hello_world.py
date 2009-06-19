@@ -22,6 +22,13 @@ def start():
             f=["Page not found"]
         start_response('200 OK', [('Content-Type','text/html')])
         return f
+    def embedlong(environ, start_response):
+        try:
+            c=open("long.txt", "rb").read()
+        except:
+            c=["Page not found"]
+        start_response('200 OK', [('Content-Type','text/html')])
+        return base.split_len(c,32768)
     def staticshort(environ, start_response):
         f=open("short.txt", "rb")
         start_response('200 OK', [('Content-Type','text/html')])
@@ -50,6 +57,7 @@ def start():
     evwsgi.wsgi_cb(("/iterhello", iteration))
     evwsgi.wsgi_cb(("/longzipped", staticlongzipped))
     evwsgi.wsgi_cb(("/long", staticlong))
+    evwsgi.wsgi_cb(("/elong", embedlong))
     evwsgi.wsgi_cb(("/short", staticshort))
     staticform=views.Staticfile("test.html")
     evwsgi.wsgi_cb(("/staticform", staticform))
