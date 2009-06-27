@@ -29,7 +29,7 @@ class Staticfile:
             ftype=mimetypes.guess_type(fpath)[0]
             headers.append(('Content-Type',ftype))
             headers.append(('Last-Modified',fmtime))
-            headers.append(('Content-Lenght',os.path.getsize(fpath)))
+            headers.append(('Content-Length',os.path.getsize(fpath)))
             start_response('200 OK', headers)
             return f
         else:
