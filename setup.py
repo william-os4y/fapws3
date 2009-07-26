@@ -44,7 +44,7 @@ if os.environ.has_key('LD_LIBRARY_PATH'):
     library_dirs.extend(os.environ['LD_LIBRARY_PATH'].split(':'))
 
 #anyhow we include the standards directories
-library_dirs.extend(['/usr/lib','usr/local/lib'])
+library_dirs.extend(['/usr/lib','/usr/local/lib'])
 include_dirs.extend(['/usr/include','/usr/local/include'])
 
 if find_file('ev.h',include_dirs)==False:
