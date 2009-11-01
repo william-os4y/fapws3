@@ -27,7 +27,7 @@ def find_file(fname, dirs):
                 return True
     return False            
 
-readme = read_file('README')
+readme = read_file('README.markdown')
 
 if "posix" not in os.name:
     print "Are you really running a posix compliant OS ?"
@@ -55,8 +55,8 @@ if find_file('Python.h',include_dirs)==False:
     print "We don't find 'Python.h' which is a mandatory file to compile Fapws"
     print "Please install the sources of python, or provide the path by setting the shell environmental variable C_INCLUDE_PATH"
     sys.exit(1)
-if find_file('libev.so',library_dirs)==False:
-    print "We don't find 'libev.so' which is a mandatory file to run Fapws"
+if find_file('libev.a',library_dirs)==False:
+    print "We don't find 'libev.a' which is a mandatory file to run Fapws"
     print "Please install libev, or provide the path by setting the shell environmental variable LD_LIBRARY_PATH"
     sys.exit(1)
 

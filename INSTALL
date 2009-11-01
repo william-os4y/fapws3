@@ -7,20 +7,27 @@ Pre-requisit:
 Libev:
 - You must have libev installed.
 - sources can be found here: http://software.schmorp.de/pkg/libev.html
-Has been tested with Libev-3.49 on Linux and FreeBSD
+Has been tested with Libev-3.49 on Linux(gentoo and archlinux) and FreeBSD-6.1, and with libev-3.8 on linux (archlinux and ubunto-904) and OpenBSD (4.5 and 4.6)
 
 Python:
-- Python >=2.4. This has been developped and tested on python 2.4 and Python 2.6.
+- Python >=2.4. This has been developped and tested on python 2.4, python 2.5 and Python 2.6.
  
 WARNING:
 To avoid conflicts with the previous version (called Fapws2), better to remove it before installation of the new one. 
+This application has not been tested with Python-3.x
 
 Install fapws:
 --------------
 
 - execute: python setup.py install
+If libev is not found in /usr or in /usr/local, please provide the correct name by updating the following environment variables: 
+C_INCLUDE_PATH: for the libev headers
+LD_LIBRARY_PATH: for the libev shared objects
 
 That's it ;-). 
+
+if you have problems, do not hesitate to contact me on the mailing list: http://groups.google.com/group/fapws
+(because of spams in the mailing list, your registration is required)
 
 Have fun with Fapws. 
 William
