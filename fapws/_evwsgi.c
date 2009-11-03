@@ -713,8 +713,11 @@ static int write_cli(struct client *cli, char *response, size_t len,  int revent
             {
                 return 1;
             }
-            response+=(int)r;
-            len -=r ;
+            if ((int)r>0)
+            {
+                response+=(int)r;
+                len -=r ;
+            }
          }
          //p==len
          return 1;
