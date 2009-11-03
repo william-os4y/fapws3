@@ -698,7 +698,7 @@ static int write_cli(struct client *cli, char *response, size_t len,  int revent
             c++;
             if (debug)
                 printf("host=%s,port=%i write_cli:uri=%s,r=%i,len=%i,c=%i\n", cli->remote_addr, cli->remote_port, cli->uri, (int)r, (int)len,c);
-            if ((int)r<0)
+            if (((int)r<0) & (errno != EAGAIN))
             {
                 cli->retry++;
                 fprintf(stderr,"Failed to write to the client:%s:%i, #:%i.\n", cli->remote_addr, cli->remote_port, cli->retry);
