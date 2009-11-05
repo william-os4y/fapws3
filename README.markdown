@@ -33,11 +33,15 @@ Please read the INSTALL document provided.
 How to use Fapws ?
 ------------------
 Using Fapws is quite simple and must be done in 4 major steps:
-1) You define the main parameters of your webserve with the method "start" and the method "base". Unless you really know what you are doing, I strongly suggest to use the "base" module provided within the package.
-2) You define your WSGI python callbacks. 
-3) You link the URL path with the python callbacks previously created. 
-4) You start you webserver by triggering the "run" method. 
-5) As describbed in the Libev documentation, you can controle the Event Loop used. By default Libev estimate what's the best one for your architecture, but you can overwrite this selection by using the environment variable: LIBEV_FLAGS.
+
+1. You define the main parameters of your webserve with the method "start" and the method "base". Unless you really know what you 
+   are doing, I strongly suggest to use the "base" module provided within the package.
+2. You define your WSGI python callbacks. 
+3. You link the URL path with the python callbacks previously created. 
+4. You start you webserver by triggering the "run" method. 
+5. As describbed in the Libev documentation, you can controle the Event Loop used. By default Libev estimate what's the best one 
+   for your architecture, but you can overwrite this selection by using the environment variable: LIBEV_FLAGS.
+
 Choices are: 1=select, 2=poll (everywhere except windows), 4=epoll (Linux), 8=kqueue (BSD clones), 16=devpoll (solaris 8), 32=port (solaris 10)
 
 For you help, check the samples.
