@@ -1,4 +1,4 @@
-Fast Asynchronous Python Web Server (Fapws is short)
+Fast Asynchronous Python Web Server (Fapws in short)
 ====================================================
 
 This is a python web server using the wonderfull libev (http://software.schmorp.de/pkg/libev.html) library. Thus this is yet an another asynchronous web server like Medusa, Twisted, Apricot.
