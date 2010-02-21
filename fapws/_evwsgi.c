@@ -488,7 +488,12 @@ manage_header_body(struct client *cli, PyObject *pyenviron)
 
     //fapws.params cannot be done in case of multipart
     pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_TYPE");
-    PyDict_SetItemString(pyenviron,"CONTENT_TYPE", pydummy);
+    if (pydummy!=NULL)
+    {
+        PyDict_SetItemString(pyenviron,"CONTENT_TYPE", pydummy);
+    } else {
+        PyDict_SetItemString(pyenviron,"CONTENT_TYPE", Py_None);
+    }
     //no incref because value not needed
     if (pydummy!=NULL)
     {
