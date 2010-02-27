@@ -5,16 +5,24 @@ Pre-requisit:
 -------------
 
 Libev:
-- You must have libev installed.
+- You must have libev (and the headers) installed. For some systems that means you have to install the "-dev" package.
 - sources can be found here: http://software.schmorp.de/pkg/libev.html
 Has been tested with Libev-3.49 on Linux(gentoo and archlinux) and FreeBSD-6.1, and with libev-3.8 on linux (archlinux and ubunto-904) and OpenBSD (4.5 and 4.6)
 
 Python:
 - Python >=2.4. This has been developped and tested on python 2.4, python 2.5 and Python 2.6.
+This application has not been tested with Python-3.x
  
 WARNING:
-To avoid conflicts with the previous version (called Fapws2), better to remove it before installation of the new one. 
-This application has not been tested with Python-3.x
+To avoid conflicts with the previous version (called Fapws2), better to remove Fapws2 before installation of Fapws3. 
+
+For MacOSX users
+-----------------
+
+- Install MacPorts from http://www.macports.org/
+- Run "sudo port install libev"
+- than follow the Fapws3 installation process described here under
+
 
 Install fapws:
 --------------
@@ -29,5 +37,5 @@ That's it ;-).
 if you have problems, do not hesitate to contact me on the mailing list: http://groups.google.com/group/fapws
 (because of spams in the mailing list, your registration is required)
 
-Have fun with Fapws. 
+Have fun with Fapws3. 
 William

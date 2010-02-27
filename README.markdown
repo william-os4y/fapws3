@@ -4,27 +4,26 @@ Fast Asynchronous Python Web Server (Fapws in short)
 This is a python web server using the wonderfull libev (http://software.schmorp.de/pkg/libev.html) library. Thus this is yet an another asynchronous web server like Medusa, Twisted, Apricot.
 And Fapws is a WSGI compliant web server.
 
-What are Fapws2 and Fapws3 about ? 
-----------------------------------
+A bit history of Fapws3 
+------------------------
 Fapws1, Fapws2 and Fapws3 are "internal" project's name. The rename correspond to a full re-write. 
 
 In the begining I made Fapws1, a Python extension based on the Apricot code. Then, quickly comes the need to have much more features in it, and I've called it Fapws2. Fapws1 has never been publically published.
-Fapws2 is rebuild based on the http library of libevent. Works great, but I've been forced to modify the evhttp_handle_request. Despite several mails to the libevent mailing list, no one was agreed to accept my patch to the http code of libevent. Thus, or use use it with libevent <1.3e or you must change the code of libevent before using it for Fapws. This is not a so good way of working ;-(.
-Than comes Fapws3, a rebuild of Fapws2 without dependencies to http's API of libevent. At that moment, Marc Lehmann posts, in the libevent mailinglist, a mail describing the creation of a "new" and optimized event's library similar to libevent: libev. 
-Because the code was much more clean to me and because the documentation provided (http://cvs.schmorp.de/libev/ev.pod) was very clear, I've decided to give it a try. 
+Fapws2 is rebuild based on the http library of libevent. Works great, but I've been forced to modify the evhttp_handle_request of libevent. Despite several mails to the libevent mailing list, no one was agreed to accept my patch. Thus, this is was a bit complicated to use. 
+At a moment, Marc Lehmann posts, in the libevent mailinglist, a mail describing the creation of a "new" and optimized event's library similar to libevent: libev. Because the code was much more clean (personnal point of view) and because the documentation provided (http://cvs.schmorp.de/libev/ev.pod) was very clear, I've decided to give it a try. Thus, in December 2008, came Fapws3.  
 
 Support for Fapws2 will be strictly limited to bug fixing. My current work will be focused on Fapws3. 
 
 
 Why a new python web server ?
 -----------------------------
-In that case, the usual question is why an new one ? In short, the answer is because it sounds that Apricot is not more maintained, and because Medusa and Twisted can not go as fast as Apricot. Indeed, after several pure performance tests it appears that, thanks to the libevent library used in Apricot, is the fastest python web server.
+In that case, the usual question is why an new one ? In short, the answer is because it sounds that Apricot is not more maintained, and because Medusa and Twisted can not go as fast as Apricot. Indeed, after several pure performance tests it appears that, thanks to a library like libevent or libev the webserver build on top of it is really fast.
 
-But that not the only reason. Personnally, I prefer event's web server. Indeed, such architecture gives more performant web server and with a much more limited memory foot print. You can easly install them into a memory limited machines (like VDS for example).
+But that's not the only reason. Personnally, I prefer event's web server. Indeed, such architecture gives more performant web server and with a much more limited memory foot print. You can easly install them into a memory limited machines (like VDS for example).
 
 Philosophy:
 -----------
-Fapws must stay the most simple web server and the fastest. Thus the core of the application is quite limited. Every additional feature will be placed inside a "contrib" sub-directory. This is volontary for disk space "foot print" reasons. Thus Fapws must also facilitate the disk utilisation.
+Fapws must stay the most simple web server and the fastest. Thus the core of the application is quite limited. Every contributions will be placed inside a "contrib" sub-directory. If disk space is so important for you, you can easily remove this contrib sub-directory. 
 
 How to install Fapws:
 ---------------------
@@ -55,6 +54,8 @@ Where it can run ?
 ------------------
 Theoritically anywhere where both Python and Libev are running. 
 
+It has been reported as running fine on: Freebsd, OpenBSD, NetBsd, Debian (and ubuntu), Gentoo, Archlinux, Fedora.
+
 License
 -------
 
@@ -74,6 +75,6 @@ License
 
 
 
-Have fun with Fapws. 
+Have fun with Fapws3. 
 
 William

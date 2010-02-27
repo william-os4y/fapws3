@@ -44,8 +44,8 @@ if os.environ.has_key('LD_LIBRARY_PATH'):
     library_dirs.extend(os.environ['LD_LIBRARY_PATH'].split(':'))
 
 #anyhow we include the standards directories
-library_dirs.extend(['/usr/lib','/usr/local/lib'])
-include_dirs.extend(['/usr/include','/usr/local/include'])
+library_dirs.extend(['/usr/lib','/usr/local/lib','/opt/local/lib'])
+include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include'])
 
 if find_file('ev.h',include_dirs)==False:
     print "We don't find 'ev.h' which is a mandatory file to compile Fapws"
@@ -64,7 +64,7 @@ if find_file('libev.a',library_dirs)==False:
 
 
 setup(name='fapws3',
-      version="0.3.2",
+      version="0.4",
       description="Fast Asynchronous Python Web Server",
       long_description=readme,
 classifiers=['Development Status :: 4 - Beta','Environment :: Web Environment','License :: OSI Approved :: GNU General Public License (GPL)','Programming Language :: C','Programming Language :: Python','Topic :: Internet :: WWW/HTTP :: HTTP Servers','Topic :: Internet :: WWW/HTTP :: WSGI :: Server'], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
