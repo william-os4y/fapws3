@@ -460,14 +460,26 @@ py_get_request_info(struct client *cli)
 /*
 In case of POST, we must populate some additional wsgi parameters.
 */
-static void 
+int  
 manage_header_body(struct client *cli, PyObject *pyenviron)
 {
     PyObject *pydummy; 
 
     pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_LENGTH");
+    if (pydummy==NULL) {
+        //a POST without content-length is not a valid 
+        printf("We cannot manage a POST without Content-Length\n");
+        printf("Associated header:\n%s\n",cli->input_header);
+        return -1;
+    }
     char *content_length_str = PyString_AsString(pydummy);
     int content_length = atoi(content_length_str);
+    if (content_length==0) {
+        //a POST with a null content-length is not a valid 
+        printf("We cannot manage a POST with Content-Length=0\n");
+        printf("Associated header:\n%s\n",cli->input_header);
+        return -1;
+    }
     pydummy = PyInt_FromString(content_length_str, NULL, 10);
     PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy); 
     Py_DECREF(pydummy);
@@ -505,6 +517,7 @@ manage_header_body(struct client *cli, PyObject *pyenviron)
             Py_DECREF(pydummy);
         }
     }
+    return 0;
 }
 
 /*
@@ -603,7 +616,9 @@ python_handler(struct client *cli)
         if (strcmp(cli->cmd,"POST")==0)
         {
             //printf("manage the post\n");
-            manage_header_body(cli, pyenviron);
+            if (manage_header_body(cli, pyenviron) < 0) {
+                return -1;
+            }
         }
     }
     //  6) add some request info
