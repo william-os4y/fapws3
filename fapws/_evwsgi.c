@@ -468,17 +468,17 @@ manage_header_body(struct client *cli, PyObject *pyenviron)
     pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_LENGTH");
     if (pydummy==NULL) {
         //a POST without content-length is not a valid 
-        printf("We cannot manage a POST without Content-Length\n");
-        printf("Associated header:\n%s\n",cli->input_header);
-        return -1;
+        #printf("We cannot manage a POST without Content-Length\n");
+        #printf("Associated header:\n%s\n",cli->input_header);
+        return -411;
     }
     char *content_length_str = PyString_AsString(pydummy);
     int content_length = atoi(content_length_str);
     if (content_length==0) {
         //a POST with a null content-length is not a valid 
-        printf("We cannot manage a POST with Content-Length=0\n");
-        printf("Associated header:\n%s\n",cli->input_header);
-        return -1;
+        #printf("We cannot manage a POST with Content-Length=0\n");
+        #printf("Associated header:\n%s\n",cli->input_header);
+        return -411;
     }
     pydummy = PyInt_FromString(content_length_str, NULL, 10);
     PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy); 
@@ -531,6 +531,7 @@ static int
 python_handler(struct client *cli)
 {
     PyObject *pydict, *pydummy;
+    int ret;
 
     if (debug)
          printf("host=%s,port=%i:python_handler:HEADER:\n%s**\n", cli->remote_addr, cli->remote_port, cli->input_header);
@@ -553,7 +554,7 @@ python_handler(struct client *cli)
     if (pydict==Py_None)
     {
         Py_DECREF(pyenviron);
-        return -1;
+        return -500;
     }
     update_environ(pyenviron, pydict, "update_headers");
     Py_DECREF(pydict);   
@@ -566,7 +567,7 @@ python_handler(struct client *cli)
         Py_DECREF(pysupportedhttpcmd);
         Py_DECREF(pydummy);
         Py_DECREF(pyenviron);
-        return -2;
+        return -501;
     }
     Py_DECREF(pydummy);
     //  2ter) we treat directly the OPTIONS command
@@ -616,8 +617,8 @@ python_handler(struct client *cli)
         if (strcmp(cli->cmd,"POST")==0)
         {
             //printf("manage the post\n");
-            if (manage_header_body(cli, pyenviron) < 0) {
-                return -1;
+            if (ret=manage_header_body(cli, pyenviron) < 0) {
+                return ret;
             }
         }
     }
@@ -768,14 +769,19 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         } 
-        else if (ret==-1)
+        else if (ret==-411)
         {
-            //problem to parse the request
-            response="HTTP/1.1 400 Bad Request\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Bad request</head><body><p>Bad request!!!</p></body></html>";
+            response="HTTP/1.1 411 Length Required\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
-        else if (ret==-2)
+        else if (ret==-500)
+        {
+            response="HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Internal Server Error</head><body><p>Internal Server Error!!!</p></body></html>";
+            write_cli(cli,response, strlen(response), revents);
+            stop=1;
+        }
+        else if (ret==-501)
         {
             //problem to parse the request
             response="HTTP/1.1 501 Not Implemented\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>";
