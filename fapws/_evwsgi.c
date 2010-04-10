@@ -468,16 +468,16 @@ manage_header_body(struct client *cli, PyObject *pyenviron)
     pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_LENGTH");
     if (pydummy==NULL) {
         //a POST without content-length is not a valid 
-        #printf("We cannot manage a POST without Content-Length\n");
-        #printf("Associated header:\n%s\n",cli->input_header);
+        //printf("We cannot manage a POST without Content-Length\n");
+        //printf("Associated header:\n%s\n",cli->input_header);
         return -411;
     }
     char *content_length_str = PyString_AsString(pydummy);
     int content_length = atoi(content_length_str);
     if (content_length==0) {
         //a POST with a null content-length is not a valid 
-        #printf("We cannot manage a POST with Content-Length=0\n");
-        #printf("Associated header:\n%s\n",cli->input_header);
+        //printf("We cannot manage a POST with Content-Length=0\n");
+        //printf("Associated header:\n%s\n",cli->input_header);
         return -411;
     }
     pydummy = PyInt_FromString(content_length_str, NULL, 10);
