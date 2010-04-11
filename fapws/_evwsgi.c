@@ -446,6 +446,7 @@ py_get_request_info(struct client *cli)
     
     pydummy=PyString_FromString(cli->remote_addr);
     PyDict_SetItemString(pydict, "fapws.remote_addr", pydummy);
+    PyDict_SetItemString(pydict, "REMOTE_ADDR", pydummy);
     Py_DECREF(pydummy);
     pydummy=Py_BuildValue("H", cli->remote_port);
     PyDict_SetItemString(pydict, "fapws.remote_port", pydummy);
