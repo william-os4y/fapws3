@@ -460,7 +460,7 @@ py_get_request_info(struct client *cli)
 /*
 In case of POST, we must populate some additional wsgi parameters.
 */
-int  
+static int  
 manage_header_body(struct client *cli, PyObject *pyenviron)
 {
     PyObject *pydummy; 
@@ -468,18 +468,14 @@ manage_header_body(struct client *cli, PyObject *pyenviron)
     pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_LENGTH");
     if (pydummy==NULL) {
         //a POST without content-length is not a valid 
-        //printf("We cannot manage a POST without Content-Length\n");
-        //printf("Associated header:\n%s\n",cli->input_header);
+        if (debug) {
+            printf("We cannot manage a POST without Content-Length\n");
+            printf("Associated header:\n%s\n",cli->input_header);
+        }
         return -411;
     }
     char *content_length_str = PyString_AsString(pydummy);
     int content_length = atoi(content_length_str);
-    if (content_length==0) {
-        //a POST with a null content-length is not a valid 
-        //printf("We cannot manage a POST with Content-Length=0\n");
-        //printf("Associated header:\n%s\n",cli->input_header);
-        return -411;
-    }
     pydummy = PyInt_FromString(content_length_str, NULL, 10);
     PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy); 
     Py_DECREF(pydummy);
@@ -617,7 +613,9 @@ python_handler(struct client *cli)
         if (strcmp(cli->cmd,"POST")==0)
         {
             //printf("manage the post\n");
-            if (ret=manage_header_body(cli, pyenviron) < 0) {
+            ret=manage_header_body(cli, pyenviron);
+            //printf("manage header return:%i\n",ret);
+            if (ret < 0) {
                 return ret;
             }
         }
@@ -762,7 +760,8 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     if (cli->response_iter_sent==-2)
     { 
         //we must send an header or an error
-        if ((ret=python_handler(cli))==0) //look for python callback and execute it
+        ret=python_handler(cli); //look for python callback and execute it
+        if (ret==0) //look for python callback and execute it
         {
             //uri not found
             response="HTTP/1.1 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>";
