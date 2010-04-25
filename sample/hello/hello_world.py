@@ -48,9 +48,10 @@ def start():
         start_response('200 OK', [('Content-Type','text/html')])
         return f
     def iteration(environ, start_response):
-        start_response('200 OK', [('Content-Type','text/html')])
-        elems=["hello", " ","worlds!!"]
-        return iter(elems)        
+        start_response('200 OK', [('Content-Type','text/plain')])
+        yield "hello"
+        yield " "
+        yield "worlds!!"
 
     
     evwsgi.wsgi_cb(("/hello", hello))

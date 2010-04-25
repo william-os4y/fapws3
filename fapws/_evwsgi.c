@@ -65,6 +65,7 @@ struct client {
         char *response_header;
 	int response_header_length;
         PyObject *response_content;
+        PyObject *response_content_obj;
         FILE *response_fp; // file of the sent file
 };
 
@@ -116,6 +117,10 @@ void close_connection(struct client *cli)
     free(cli->uri_path);
     //free(cli->response_header);
     Py_XDECREF(cli->response_content);
+    if (cli->response_content_obj!=NULL)
+    {
+        Py_DECREF(cli->response_content_obj);
+    }
     if (cli->response_fp){
         //free(cli->response_fp);
     }
@@ -632,6 +637,11 @@ python_handler(struct client *cli)
     // 8) execute python callbacks with his parameters
     PyObject *pyarglist = Py_BuildValue("(OO)", pyenviron, pystart_response );
     cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
+    if (PyIter_Check(cli->response_content)==1) {
+         //This is an Iterator object. We have to execute it first
+         cli->response_content_obj = cli->response_content;
+         cli->response_content = PyIter_Next(cli->response_content_obj);
+    }
     Py_DECREF(pyarglist);
     Py_XDECREF(cli->wsgi_cb);
     if (cli->response_content!=NULL) 
@@ -803,7 +813,7 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     else 
     {
         //we let the python developer to manage other HTTP command
-        if (PyList_Check(cli->response_content)) //we treat list object
+        if ((PyList_Check(cli->response_content))  && (cli->response_content_obj==NULL)) //we treat list object
         {
             cli->response_iter_sent++;
             if (cli->response_iter_sent<PyList_Size(cli->response_content)) 
@@ -833,7 +843,7 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 stop=2;
             }    
         } 
-        else if (PyFile_Check(cli->response_content)) // we treat file object
+        else if (PyFile_Check(cli->response_content) && (cli->response_content_obj==NULL)) // we treat file object
         {
             if (cli->response_iter_sent==-1) // we need to initialise the file descriptor
             {
@@ -860,10 +870,10 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             }
             //free(buff);
         } 
-        else if (PyIter_Check(cli->response_content)) //we treat Iterator object
+        else if (PyIter_Check(cli->response_content_obj)) //we treat Iterator object
         {
             cli->response_iter_sent++;
-            PyObject *pyelem = PyIter_Next(cli->response_content);
+            PyObject *pyelem = cli->response_content;
             if (pyelem == NULL) 
             {
                 stop = 2;
@@ -890,6 +900,15 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                     printf("The item %i of your iterator is not a string!!!!  It will be skipped\n",cli->response_iter_sent);
                 }
                 Py_DECREF(pyelem);
+                cli->response_content = PyIter_Next(cli->response_content_obj);
+                if (cli->response_content==NULL)
+                {
+                     if (debug)
+                     {
+                         printf("Iterator is ended\n");
+                     }
+                     stop=2;
+                }
             }    
         } 
         else 
@@ -901,14 +920,16 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     }// end of GET OR POST request
     if (stop==2)
     {
+      if (cli->response_content!=NULL) {
         if (PyObject_HasAttrString(cli->response_content, "close"))
         {
             PyObject *pydummy=PyObject_GetAttrString(cli->response_content, "close");
             PyObject_CallFunction(pydummy, NULL);
             Py_DECREF(pydummy);
         }
-        ev_io_stop(EV_A_ w);
-        close_connection(cli);
+      }
+      ev_io_stop(EV_A_ w);
+      close_connection(cli);
     }
     if (stop==1)
     {
@@ -1023,6 +1044,7 @@ static void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->wsgi_cb=NULL;
     cli->response_header=NULL;
     cli->response_content=NULL;
+    cli->response_content_obj=NULL;
     if (debug)
         printf("host:%s,port:%i accept_cb: cli:%p, input_header:%p\n", inet_ntoa (client_addr.sin_addr),ntohs(client_addr.sin_port), cli, cli->input_header);
     cli->input_pos=0;
