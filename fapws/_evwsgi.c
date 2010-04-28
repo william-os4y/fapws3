@@ -637,10 +637,13 @@ python_handler(struct client *cli)
     // 8) execute python callbacks with his parameters
     PyObject *pyarglist = Py_BuildValue("(OO)", pyenviron, pystart_response );
     cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
-    if (PyIter_Check(cli->response_content)==1) {
-         //This is an Iterator object. We have to execute it first
-         cli->response_content_obj = cli->response_content;
-         cli->response_content = PyIter_Next(cli->response_content_obj);
+    if (cli->response_content!=NULL) 
+    {
+        if (PyIter_Check(cli->response_content)==1) {
+            //This is an Iterator object. We have to execute it first
+            cli->response_content_obj = cli->response_content;
+            cli->response_content = PyIter_Next(cli->response_content_obj);
+        }
     }
     Py_DECREF(pyarglist);
     Py_XDECREF(cli->wsgi_cb);
