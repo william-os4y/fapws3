@@ -74,7 +74,7 @@ struct client {
 Somme  global variables
 */
 char *server_name="127.0.0.1";
-short server_port=8000;
+char *server_port="8000";
 int sockfd;  // main sock_fd
 int debug=0; //1 full debug detail: 0 nodebug
 
@@ -320,7 +320,7 @@ header_to_dict(struct client *cli)
     pyval = Py_BuildValue("s", server_name );
     PyDict_SetItemString(pydict, "SERVER_NAME", pyval);
     Py_DECREF(pyval);
-    pyval = Py_BuildValue("i", server_port );
+    pyval = Py_BuildValue("s", server_port );
     PyDict_SetItemString(pydict, "SERVER_PORT", pyval);
     Py_DECREF(pyval);
     //then we analyze all the other lines up to the body (not included) of the header 
@@ -394,7 +394,7 @@ py_build_method_variables( struct client *cli)
     pydummy=PyString_FromString(server_name);
     PyDict_SetItemString(pydict, "SERVER_NAME", pydummy);
     Py_DECREF(pydummy);
-    pydummy=Py_BuildValue("h", server_port);
+    pydummy=PyString_FromString(server_port);
     PyDict_SetItemString(pydict, "SERVER_PORT", pydummy);
     Py_DECREF(pydummy);
     pydummy=PyString_FromString(cli->uri);
@@ -1092,15 +1092,13 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
 //    struct sockaddr_storage their_addr; // connector's address information
     int yes=1;
     int rv;
-    char strport[7];
 
-    PyArg_ParseTuple(args, "si", &server_name, &server_port);
+    PyArg_ParseTuple(args, "ss", &server_name, &server_port);
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
-    snprintf(strport, sizeof (strport), "%d", server_port);
-    if ((rv = getaddrinfo(server_name, strport, &hints, &servinfo)) == -1) {
+    if ((rv = getaddrinfo(server_name, server_port, &hints, &servinfo)) == -1) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         exit(1);
     }
@@ -1139,7 +1137,7 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
         perror("listen");
         exit(1);
     }
-    printf("listen on %s:%i\n", server_name, server_port);
+    printf("listen on %s:%s\n", server_name, server_port);
     return Py_None;
 }
 
