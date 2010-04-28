@@ -9,7 +9,7 @@ sys.setcheckinterval(100000) # since we don't use threads, internal checks are n
 from fapws.contrib import views, cgiapp
 
 def start():
-    evwsgi.start("0.0.0.0", 8080)
+    evwsgi.start("0.0.0.0", "8080")
     
     evwsgi.set_base_module(base)
     

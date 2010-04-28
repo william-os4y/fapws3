@@ -11,7 +11,7 @@ path = '%s/%s' % (config_path, 'development.ini')
 wsgi_app = paste.deploy.loadapp('config:%s' % path)
 
 def start():
-    evwsgi.start("0.0.0.0", 5000)
+    evwsgi.start("0.0.0.0", "5000")
     evwsgi.set_base_module(base)
     
     def app(environ, start_response):

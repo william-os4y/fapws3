@@ -7,7 +7,7 @@ import sys
 from fapws.contrib import views, zip, log
 
 def start():
-    evwsgi.start("0.0.0.0", 8080)
+    evwsgi.start("0.0.0.0", "8080")
     evwsgi.set_base_module(base)
     
     def hello(environ, start_response):

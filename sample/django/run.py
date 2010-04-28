@@ -9,7 +9,7 @@ from fapws.contrib import django_handler, views
 import django
 
 def start():
-    evwsgi.start("0.0.0.0", 8080)
+    evwsgi.start("0.0.0.0", "8080")
     
     evwsgi.set_base_module(base)
     
