@@ -639,7 +639,7 @@ python_handler(struct client *cli)
     cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
     if (cli->response_content!=NULL) 
     {
-        if (PyIter_Check(cli->response_content)==1) {
+        if ((PyFile_Check(cli->response_content)==0) && (PyIter_Check(cli->response_content)==1)) {
             //This is an Iterator object. We have to execute it first
             cli->response_content_obj = cli->response_content;
             cli->response_content = PyIter_Next(cli->response_content_obj);
@@ -908,7 +908,7 @@ static void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 {
                      if (debug)
                      {
-                         printf("Iterator is ended\n");
+                         printf("host=%s,port=%i iterator ended uri=%s\n", cli->remote_addr, cli->remote_port, cli->uri );
                      }
                      stop=2;
                 }
