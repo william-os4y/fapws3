@@ -88,7 +88,7 @@ class Environ(dict):
         self['wsgi.multithread'] = False
         self['wsgi.multiprocess'] = True
         self['wsgi.run_once'] = False
-        self['wsgi.url_scheme']="http"   #TODO:  support of https
+        self['wsgi.url_scheme']="http" 
         self['fapws.params']={}
     #here after some entry point before the Environ update
     def update_headers(self, data):

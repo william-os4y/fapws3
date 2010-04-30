@@ -233,7 +233,6 @@ char * remove_leading_and_trailing_spaces(char* s)
 }
 
 
-
 /*
 This procedure transform the header to something required by wsgi.
 */
@@ -309,9 +308,6 @@ header_to_dict(struct client *cli)
     cli->protocol=(char *)calloc(strlen(protocol)+1, sizeof(char));
      assert(cli->protocol);
      strcpy(cli->protocol, protocol);   // will be cleaned with cli
-     pyval = Py_BuildValue("s", protocol );
-     PyDict_SetItemString(pydict, "wsgi.url_scheme", pyval); // can be http or https
-     Py_DECREF(pyval);
     pyval = Py_BuildValue("s", http_version );
      PyDict_SetItemString(pydict, "fapws.major_minor", pyval); // can be 0.9, 1.0 or 1.1
      Py_DECREF(pyval);
