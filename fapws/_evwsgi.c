@@ -40,7 +40,7 @@
 #define BACKLOG 1024     // how many pending connections queue will hold
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 9   //number of connection retry
-#define VERSION "0.5"
+#define VERSION "0.6"
 
 /*
 Structure we use for each client's connection. 
@@ -82,7 +82,8 @@ PyObject *py_base_module;  //to store the fapws.base python module
 PyObject *py_config_module; //to store the fapws.config module
 PyObject *py_registered_uri; //list containing the uri registered and their associated wsgi callback.
 PyObject *py_generic_cb=NULL; 
-
+PyObject *py_timer_cb;
+float timer_delay=5.0;
 
 
 /*
@@ -1104,8 +1105,8 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
 
     // loop through all the results and bind to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
+        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (sockfd == -1) {
             perror("server: socket");
             continue;
         }
@@ -1140,6 +1141,20 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
     return Py_None;
 }
 
+static void 
+timer_cb(struct ev_loop *loop, ev_timer *mytimer, int revents)
+{
+    PyObject *resp = PyEval_CallObject(py_timer_cb, NULL);
+    if (resp==NULL)
+    {
+        if (PyErr_Occurred()) 
+        { 
+             PyErr_Print();
+        }
+    }
+}
+
+
 /*
 Procedure exposed in Python will generate and start the event loop
 */
@@ -1149,6 +1164,7 @@ py_run_loop(PyObject *self, PyObject *args)
     char *backend="";
     ev_io accept_watcher;
     ev_signal signal_watcher, signal_watcher2;
+    ev_timer mytimer;
     struct ev_loop *loop = ev_default_loop (0);
     switch (ev_backend(loop))
     {
@@ -1172,6 +1188,11 @@ py_run_loop(PyObject *self, PyObject *args)
     ev_signal_start(loop, &signal_watcher);
     ev_signal_init(&signal_watcher2, sigpipe_cb, SIGPIPE);
     ev_signal_start(loop, &signal_watcher2);
+    if (py_timer_cb)
+    {
+        ev_timer_init(&mytimer, timer_cb, timer_delay, timer_delay);
+        ev_timer_start(loop, &mytimer);
+    }
     ev_loop (loop, 0);
     return Py_None;
 }
@@ -1266,6 +1287,18 @@ py_get_debug(PyObject *self, PyObject *args)
     return Py_BuildValue("i", debug);
 }
 
+/*
+Procedure exposed in Python to add a timer: delay, python callback method
+*/
+static PyObject *
+py_add_timer_cb(PyObject *self, PyObject *args)
+{
+    if (!PyArg_ParseTuple(args, "fO", &timer_delay, &py_timer_cb)) 
+        return NULL;
+    return Py_None;    
+}
+
+
 
 static PyMethodDef EvhttpMethods[] = {
     {"start", py_ev_start, METH_VARARGS, "Define evhttp sockets"},
@@ -1278,6 +1311,7 @@ static PyMethodDef EvhttpMethods[] = {
     {"set_debug", py_set_debug, METH_VARARGS, "Set the debug level"},
     {"get_debug", py_get_debug, METH_VARARGS, "Get the debug level"},
     {"libev_version", py_libev_version, METH_VARARGS, "Get the libev's ABI version you are using"},
+    {"add_timer", py_add_timer_cb, METH_VARARGS, "Add a timer"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
