@@ -1313,15 +1313,62 @@ static PyObject *
 py_add_timer_cb(PyObject *self, PyObject *args)
 {
     struct TimerObj *timer;
-
-    timer = calloc(1,sizeof(struct TimerObj));
-    if (!PyArg_ParseTuple(args, "fO", &timer->delay, &timer->py_cb)) 
-        return NULL;
-    list_timers[list_timers_i]=timer;
-    list_timers_i++;
-        
+    if (list_timers_i<MAX_TIMERS)
+    {
+        timer = calloc(1,sizeof(struct TimerObj));
+        if (!PyArg_ParseTuple(args, "fO", &timer->delay, &timer->py_cb)) 
+            return NULL;
+        list_timers[list_timers_i]=timer;
+        list_timers_i++;
+    } 
+    else
+    {
+        printf("Limit of maximum %i timers has been reached\n", list_timers_i);
+    }
+    
     return PyInt_FromLong(list_timers_i);    
 }
+
+/*
+Procedure exposed in Python to stop a running timer: i
+*/
+static PyObject *
+py_stop_timer(PyObject *self, PyObject *args)
+{
+    int i;
+    struct TimerObj *timer;
+    struct ev_loop *loop = ev_default_loop(0);
+    if (!PyArg_ParseTuple(args, "i", &i)) 
+        return NULL;
+    timer=list_timers[i];
+    ev_timer_stop(loop, &timer->timerwatcher);
+    
+    return Py_None;    
+}
+
+/*
+Procedure exposed in Python to restart a running timer: i
+*/
+static PyObject *
+py_restart_timer(PyObject *self, PyObject *args)
+{
+    int i;
+    struct TimerObj *timer;
+    struct ev_loop *loop = ev_default_loop(0);
+    if (!PyArg_ParseTuple(args, "i", &i)) 
+        return NULL;
+    if (i<=list_timers_i)
+    {
+        timer=list_timers[i];
+        ev_timer_again(loop, &timer->timerwatcher);
+    }
+    else
+    {
+        printf("index out of range\n");
+    }
+    return Py_None;    
+}
+
 
 
 
@@ -1337,6 +1384,8 @@ static PyMethodDef EvhttpMethods[] = {
     {"get_debug", py_get_debug, METH_VARARGS, "Get the debug level"},
     {"libev_version", py_libev_version, METH_VARARGS, "Get the libev's ABI version you are using"},
     {"add_timer", py_add_timer_cb, METH_VARARGS, "Add a timer"},
+    {"stop_timer", py_stop_timer, METH_VARARGS, "Stop a running timer"},
+    {"restart_timer", py_restart_timer, METH_VARARGS, "Restart an existing timer"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
