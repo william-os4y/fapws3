@@ -1160,6 +1160,11 @@ timer_cb(struct ev_loop *loop, ev_timer *w, int revents)
         { 
              PyErr_Print();
         }
+        ev_timer_stop(loop, w);
+    }
+    if (resp==Py_False)
+    {
+        ev_timer_stop(loop, w);
     }
 }
 
