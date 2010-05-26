@@ -41,6 +41,7 @@
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 9   //number of connection retry
 #define VERSION "0.6"
+#define MAX_TIMERS 10 //maximum number of running timers
 
 /*
 Structure we use for each client's connection. 
@@ -63,10 +64,16 @@ struct client {
         PyObject *wsgi_cb;
         int response_iter_sent; //-2: nothing sent, -1: header sent, 0-9999: iter sent
         char *response_header;
-	int response_header_length;
+        int response_header_length;
         PyObject *response_content;
         PyObject *response_content_obj;
         FILE *response_fp; // file of the sent file
+};
+
+struct TimerObj {
+        ev_timer timerwatcher;
+        float delay;
+        PyObject *py_cb;
 };
 
 
@@ -82,8 +89,9 @@ PyObject *py_base_module;  //to store the fapws.base python module
 PyObject *py_config_module; //to store the fapws.config module
 PyObject *py_registered_uri; //list containing the uri registered and their associated wsgi callback.
 PyObject *py_generic_cb=NULL; 
-PyObject *py_timer_cb;
-float timer_delay=5.0;
+struct TimerObj *list_timers[MAX_TIMERS];
+int list_timers_i=0; //number of values entered in the array list_timers
+
 
 
 /*
@@ -1142,9 +1150,10 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
 }
 
 static void 
-timer_cb(struct ev_loop *loop, ev_timer *mytimer, int revents)
+timer_cb(struct ev_loop *loop, ev_timer *w, int revents)
 {
-    PyObject *resp = PyEval_CallObject(py_timer_cb, NULL);
+    struct TimerObj *timer= ((struct TimerObj*) (((char*)w) - offsetof(struct TimerObj,timerwatcher)));
+    PyObject *resp = PyEval_CallObject(timer->py_cb, NULL);
     if (resp==NULL)
     {
         if (PyErr_Occurred()) 
@@ -1162,9 +1171,10 @@ static PyObject *
 py_run_loop(PyObject *self, PyObject *args)
 {
     char *backend="";
+    int i;
     ev_io accept_watcher;
     ev_signal signal_watcher, signal_watcher2;
-    ev_timer mytimer;
+    struct TimerObj *timer;
     struct ev_loop *loop = ev_default_loop (0);
     switch (ev_backend(loop))
     {
@@ -1188,10 +1198,14 @@ py_run_loop(PyObject *self, PyObject *args)
     ev_signal_start(loop, &signal_watcher);
     ev_signal_init(&signal_watcher2, sigpipe_cb, SIGPIPE);
     ev_signal_start(loop, &signal_watcher2);
-    if (py_timer_cb)
+    if (list_timers_i>=0)
     {
-        ev_timer_init(&mytimer, timer_cb, timer_delay, timer_delay);
-        ev_timer_start(loop, &mytimer);
+        for (i=0; i<list_timers_i; i++)
+        {
+            timer=list_timers[i];
+            ev_timer_init(&timer->timerwatcher, timer_cb, timer->delay, timer->delay);
+            ev_timer_start(loop, &timer->timerwatcher);
+        }
     }
     ev_loop (loop, 0);
     return Py_None;
@@ -1293,9 +1307,15 @@ Procedure exposed in Python to add a timer: delay, python callback method
 static PyObject *
 py_add_timer_cb(PyObject *self, PyObject *args)
 {
-    if (!PyArg_ParseTuple(args, "fO", &timer_delay, &py_timer_cb)) 
+    struct TimerObj *timer;
+
+    timer = calloc(1,sizeof(struct TimerObj));
+    if (!PyArg_ParseTuple(args, "fO", &timer->delay, &timer->py_cb)) 
         return NULL;
-    return Py_None;    
+    list_timers[list_timers_i]=timer;
+    list_timers_i++;
+        
+    return PyInt_FromLong(list_timers_i);    
 }
 
 
