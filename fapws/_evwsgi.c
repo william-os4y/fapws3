@@ -93,7 +93,6 @@ struct TimerObj *list_timers[MAX_TIMERS];
 int list_timers_i=0; //number of values entered in the array list_timers
 
 
-
 /*
 Just to assure the connection will be nonblocking
 */
@@ -1166,7 +1165,9 @@ timer_cb(struct ev_loop *loop, ev_timer *w, int revents)
     {
         ev_timer_stop(loop, w);
     }
+    Py_DECREF(resp);
 }
+
 
 
 /*
@@ -1368,8 +1369,6 @@ py_restart_timer(PyObject *self, PyObject *args)
     }
     return Py_None;    
 }
-
-
 
 
 static PyMethodDef EvhttpMethods[] = {
