@@ -17,7 +17,11 @@ def find_file(fname, dirs):
             return True
         #we don't find it, it can be located into a subdirectory ;-)
         localdirs=[]
-        for elem in os.listdir(ckdir):
+        try:
+            elems=os.listdir(ckdir)
+        except:
+            elems=[]
+        for elem in elems:
             fpname=os.path.join(ckdir,elem)
             if os.path.isdir(fpname):
                 localdirs.append(fpname)
