@@ -1218,16 +1218,6 @@ py_run_loop(PyObject *self, PyObject *args)
 }
 
 /*
-Procedure exposed in Python to provide extension's version
-*/
-static PyObject *
-py_version(PyObject *self, PyObject *args)
-{
-    PyObject *pyres=Py_BuildValue("s", "3.b.0");
-    return pyres;
-}
-
-/*
 Procedure exposed in Python to provide libev's ABI version
 */
 static PyObject *
@@ -1373,7 +1363,6 @@ py_restart_timer(PyObject *self, PyObject *args)
 
 static PyMethodDef EvhttpMethods[] = {
     {"start", py_ev_start, METH_VARARGS, "Define evhttp sockets"},
-    {"version", py_version, METH_VARARGS, "return the version of the shared object"}, 
     {"set_base_module", py_set_base_module, METH_VARARGS, "set you base module"},
     {"run", py_run_loop, METH_VARARGS, "Run the main loop"},
     {"wsgi_cb", py_add_wsgi_cb, METH_VARARGS, "Add an uri and his wsgi callback in the list of uri to watch"},
