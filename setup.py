@@ -13,8 +13,8 @@ def find_file(fname, dirs):
         if os.path.isfile(fpname):
             founded=True
         if founded:
-            #print "----------Find",fname," in ", ckdir
-            return True
+            print "----------Find",fname," in ", ckdir
+            return ckdir
         #we don't find it, it can be located into a subdirectory ;-)
         localdirs=[]
         try:
@@ -28,7 +28,7 @@ def find_file(fname, dirs):
         if localdirs:
             res=find_file(fname,localdirs)
             if res:
-                return True
+                return res
     return False            
 
 readme = read_file('README.markdown')
@@ -38,8 +38,11 @@ if "posix" not in os.name:
     print "Be posix compliant is mandatory"
     sys.exit(1)
 
+search_library_dirs=[]
+search_include_dirs=[]
 library_dirs=[]
 include_dirs=[]
+
 
 #we add, at the begining of the list, the existing environemental variables
 if os.environ.has_key('C_INCLUDE_PATH'):
@@ -48,22 +51,28 @@ if os.environ.has_key('LD_LIBRARY_PATH'):
     library_dirs.extend(os.environ['LD_LIBRARY_PATH'].split(':'))
 
 #anyhow we include the standards directories
-library_dirs.extend(['/usr/lib','/usr/local/lib','/opt/local/lib'])
-include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include'])
+search_library_dirs.extend(['/usr/lib','/usr/local/lib','/opt/local/lib','/usr/lib64'])
+search_include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include'])
 
-if find_file('ev.h',include_dirs)==False:
+
+res=find_file('ev.h',search_include_dirs)
+if res==False:
     print "We don't find 'ev.h' which is a mandatory file to compile Fapws"
     print "Please install the sources of libev, or provide the path by setting the shell environmental variable C_INCLUDE_PATH"
     sys.exit(1)
-if find_file('Python.h',include_dirs)==False:
+include_dirs.append(res)
+res=find_file('Python.h',search_include_dirs)
+if res==False:
     print "We don't find 'Python.h' which is a mandatory file to compile Fapws"
     print "Please install the sources of python, or provide the path by setting the shell environmental variable C_INCLUDE_PATH"
     sys.exit(1)
-if find_file('libev.a',library_dirs)==False:
+include_dirs.append(res)
+res=find_file('libev.so',search_library_dirs)
+if res==False:
     print "We don't find 'libev.a' which is a mandatory file to run Fapws"
     print "Please install libev, or provide the path by setting the shell environmental variable LD_LIBRARY_PATH"
     sys.exit(1)
-
+library_dirs.append(res)
 
 
 
