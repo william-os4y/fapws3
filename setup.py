@@ -46,9 +46,9 @@ include_dirs=[]
 
 #we add, at the begining of the list, the existing environemental variables
 if os.environ.has_key('C_INCLUDE_PATH'):
-    include_dirs.extend(os.environ['C_INCLUDE_PATH'].split(':'))
+    search_include_dirs.extend(os.environ['C_INCLUDE_PATH'].split(':'))
 if os.environ.has_key('LD_LIBRARY_PATH'):
-    library_dirs.extend(os.environ['LD_LIBRARY_PATH'].split(':'))
+    search_library_dirs.extend(os.environ['LD_LIBRARY_PATH'].split(':'))
 
 #anyhow we include the standards directories
 search_library_dirs.extend(['/usr/lib','/usr/local/lib','/opt/local/lib','/usr/lib64'])
