@@ -42,7 +42,7 @@
 #define MAX_RETRY 9   //number of connection retry
 #define VERSION "0.7"
 #define MAX_TIMERS 10 //maximum number of running timers
-
+#define DEFER_QUEUE_MAX_SIZE 1000 //maximum number of function in the defer queue
 /*
 Structure we use for each client's connection. 
 */
@@ -91,7 +91,9 @@ PyObject *py_registered_uri; //list containing the uri registered and their asso
 PyObject *py_generic_cb=NULL; 
 struct TimerObj *list_timers[MAX_TIMERS];
 int list_timers_i=0; //number of values entered in the array list_timers
-
+struct ev_loop *loop; // we define a global loop
+PyObject *pydeferqueue;  //initialisation of defer
+ev_idle *idle_watcher;
 
 /*
 Just to assure the connection will be nonblocking
@@ -1168,6 +1170,45 @@ timer_cb(struct ev_loop *loop, ev_timer *w, int revents)
     Py_DECREF(resp);
 }
 
+/*
+ */
+static void
+idle_cb(struct ev_loop *loop, ev_idle *w, int revents)
+{
+    int listsize;
+    
+
+    listsize=PyList_Size(pydeferqueue);
+    if (listsize>0)
+    {
+        PyObject *pyelem=PySequence_GetItem(pydeferqueue,0); 
+        PyObject *pyfct=PySequence_GetItem(pyelem,0);
+        PyObject *pyfctargs=PySequence_GetItem(pyelem,1);
+        //execute the python code
+        if (debug) printf("Execute 1 python function in defer mode:%i\n", listsize);
+        PyObject *response = PyObject_CallFunctionObjArgs(pyfct, pyfctargs, NULL); 
+        if (response==NULL) 
+        {
+            printf("ERROR!!!! Defer callback function as a problem. \nI remind that it takes always one argumet\n");
+            PyErr_Print();
+            //exit(1);
+        }
+        Py_XDECREF(response);
+        Py_DECREF(pyfct);
+        Py_DECREF(pyfctargs);
+        Py_DECREF(pyelem);
+        //remove the element
+        PySequence_DelItem(pydeferqueue,0); // don't ask me why, but the delitem has to be after the decrefs
+    } else
+    {
+        //stop idle if queue is empty
+        if (debug) printf("stop ev_idle\n");
+        ev_idle_stop(loop, w);
+        Py_DECREF(pydeferqueue);
+        pydeferqueue=NULL;
+    }
+}
+
 
 
 /*
@@ -1181,7 +1222,7 @@ py_run_loop(PyObject *self, PyObject *args)
     ev_io accept_watcher;
     ev_signal signal_watcher, signal_watcher2;
     struct TimerObj *timer;
-    struct ev_loop *loop = ev_default_loop (0);
+    loop = ev_default_loop (0);
     switch (ev_backend(loop))
     {
         case 1:
@@ -1204,6 +1245,8 @@ py_run_loop(PyObject *self, PyObject *args)
     ev_signal_start(loop, &signal_watcher);
     ev_signal_init(&signal_watcher2, sigpipe_cb, SIGPIPE);
     ev_signal_start(loop, &signal_watcher2);
+    idle_watcher = malloc(sizeof(ev_idle));
+    ev_idle_init(idle_watcher, idle_cb);
     if (list_timers_i>=0)
     {
         for (i=0; i<list_timers_i; i++)
@@ -1361,6 +1404,80 @@ py_restart_timer(PyObject *self, PyObject *args)
 }
 
 
+/*
+Register a python function to execute when idle
+*/
+PyObject *
+py_defer(PyObject *self, PyObject *args)
+{
+    PyObject *pyfct, *pycombined, *pyfctargs;
+    int startidle=0;
+    int toadd=1;
+    int listsize=0;
+    
+    if (!PyArg_ParseTuple(args, "OOO", &pyfct, &pyfctargs, &pycombined))
+        return NULL;
+    //if queue is empty, trigger a start of idle
+    
+    if (!pydeferqueue) 
+    {
+        pydeferqueue=PyList_New(0);
+    }
+    listsize=PyList_Size(pydeferqueue);
+    if (listsize==0)
+    {
+        //it has been stopped by the idle_cb
+        startidle=1;    
+    }
+    if (listsize > DEFER_QUEUE_MAX_SIZE)
+    {
+        printf("WARNING!!! The defer queue has reached his maximum size:%i. It's now:%i\n", DEFER_QUEUE_MAX_SIZE, listsize);
+    }
+    //add fct cb into the defer queue
+    PyObject *pyelem=PyList_New(0);
+    PyList_Append(pyelem, pyfct);
+    PyList_Append(pyelem, pyfctargs);   
+    if (pycombined==Py_True)
+    {
+        //check if the fucntion is already in the queue
+        if (PySequence_Contains(pydeferqueue, pyelem))
+        {
+            toadd=0;
+        }
+    }
+    
+    if (toadd==1)
+    {
+        PyList_Append(pydeferqueue, pyelem);
+        //start the idle
+        if (startidle==1)
+        {
+            //we create a new idle watcher and we start it
+            if (debug) printf("trigger idle_start \n");
+            ev_idle_start(loop, idle_watcher);
+        }
+    }
+    Py_DECREF(pyelem);
+    return Py_None;
+}
+
+/*
+Return the defer queue size
+*/
+PyObject *
+py_defer_queue_size(PyObject *self, PyObject *args)
+{
+    int listsize;
+    if (pydeferqueue)
+    {
+        listsize=PyList_Size(pydeferqueue);  
+        return Py_BuildValue("i", listsize);
+    } else
+    {
+        return Py_None;
+    }
+}
+
 static PyMethodDef EvhttpMethods[] = {
     {"start", py_ev_start, METH_VARARGS, "Define evhttp sockets"},
     {"set_base_module", py_set_base_module, METH_VARARGS, "set you base module"},
@@ -1374,6 +1491,8 @@ static PyMethodDef EvhttpMethods[] = {
     {"add_timer", py_add_timer_cb, METH_VARARGS, "Add a timer"},
     {"stop_timer", py_stop_timer, METH_VARARGS, "Stop a running timer"},
     {"restart_timer", py_restart_timer, METH_VARARGS, "Restart an existing timer"},
+    {"defer", py_defer, METH_VARARGS, "defer the execution of a python function."},
+    {"defer_queue_size", py_defer_queue_size, METH_VARARGS, "Get the size of the defer queue"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
