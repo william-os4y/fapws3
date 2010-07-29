@@ -12,6 +12,9 @@ Has been tested with Libev-3.49 on Linux(gentoo and archlinux) and FreeBSD-6.1, 
 Python:
 - Python >=2.4. This has been developped and tested on python 2.4, python 2.5 and Python 2.6.
 This application has not been tested with Python-3.x
+
+- On 64Bits machine, Python 2.4 will not work correctly.
+
  
 WARNING:
 To avoid conflicts with the previous version (called Fapws2), better to remove Fapws2 before installation of Fapws3. 
