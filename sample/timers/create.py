@@ -12,7 +12,7 @@ temp_text="""Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam sed 
 
 for i in range(1000):
    name="page%s" %i
-   c.execute("insert into names values (?,?,?)", (page, temp_text,0))
+   c.execute("insert into names values (?,?,?)", (name, temp_text,0))
 
 con.commit()
 con.close()

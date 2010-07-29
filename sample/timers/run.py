@@ -8,7 +8,7 @@ from ssdm import ssdm
 
 i=0
 
-lookup = TemplateLookup(directories=['../templates',], filesystem_checks=True, module_directory='./modules')
+lookup = TemplateLookup(directories=['templates',], filesystem_checks=True, module_directory='./modules')
 #Thanks to assure the database will first be created (create.py)
 con=ssdm.connect('database.db')
 db=ssdm.scan_db(con)
@@ -19,7 +19,7 @@ evwsgi.set_base_module(base)
 def names(environ, start_response):
     start_response('200 OK', [('Content-Type','text/html')])
     name=environ['PATH_INFO']
-    rec=db.names.select("name='%s'" % name)
+    rec=db.names.select("page='%s'" % name)
     template=lookup.get_template('names.html')
     if rec:
         rec=rec[0]
