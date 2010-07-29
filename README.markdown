@@ -2,7 +2,7 @@ Fast Asynchronous Python Web Server (Fapws in short)
 ====================================================
 
 This is a python web server using the wonderfull libev (http://software.schmorp.de/pkg/libev.html) library. Thus this is yet an another asynchronous web server like Medusa, Twisted, Apricot.
-And Fapws is a WSGI compliant web server.
+And Fapws is WSGI compliant.
 
 A bit history of Fapws3 
 ------------------------
@@ -10,7 +10,7 @@ Fapws1, Fapws2 and Fapws3 are "internal" project's name. The rename correspond t
 
 In the begining I made Fapws1, a Python extension based on the Apricot code. Then, quickly comes the need to have much more features in it, and I've called it Fapws2. Fapws1 has never been publically published.
 Fapws2 is rebuild based on the http library of libevent. Works great, but I've been forced to modify the evhttp_handle_request of libevent. Despite several mails to the libevent mailing list, no one was agreed to accept my patch. Thus, this is was a bit complicated to use. 
-At a moment, Marc Lehmann posts, in the libevent mailinglist, a mail describing the creation of a "new" and optimized event's library similar to libevent: libev. Because the code was much more clean (personnal point of view) and because the documentation provided (http://cvs.schmorp.de/libev/ev.pod) was very clear, I've decided to give it a try. Thus, in December 2008, came Fapws3.  
+At a moment, Marc Lehmann posts, in the libevent mailinglist, a mail describing the creation of a "new" and optimized event's library similar to libevent: libev. Because the code was much more clean (personnal point of view) and because the documentation provided (http://cvs.schmorp.de/libev/ev.pod) was very clear, I've decided to give it a try. Thus, in December 2008, came Fapws3; a full re-write of Fapws2, but based on libev.  
 
 Support for Fapws2 will be strictly limited to bug fixing. My current work will be focused on Fapws3. 
 
@@ -24,6 +24,7 @@ But that's not the only reason. Personnally, I prefer event's web server. Indeed
 Philosophy:
 -----------
 Fapws must stay the most simple web server and the fastest. Thus the core of the application is quite limited. Every contributions will be placed inside a "contrib" sub-directory. If disk space is so important for you, you can easily remove this contrib sub-directory. 
+Moreover, I will not implement in Fapws what other application can do. Thus for eample, proxying, load balancing, SSL will not be implemented. Tools like pound (http://www.apsis.ch/pound/) do that very well.
 
 How to install Fapws:
 ---------------------
@@ -49,12 +50,21 @@ How to got news about Fapws ?
 -----------------------------
 You will find information concerning Fapws on my own blog: http://william-os4y.livejournal.com/
 You can also join us in the Fapws mailing list: http://groups.google.com/group/fapws (because of spams, registration is required). 
+And since 2010 you have the website: http://www.fapws.org
 
 Where it can run ?
 ------------------
-Theoritically anywhere where both Python and Libev are running. 
+Theoritically anywhere where both Python (2.4 or above) and Libev are running. 
 
 It has been reported as running fine on: Freebsd, OpenBSD, NetBsd, Debian (and ubuntu), Gentoo, Archlinux, Fedora.
+
+But note that it will not run on 64bit machines using python 2.4 or lower. 
+And it has not yet been ported to python 3.x
+
+Contribution
+-------------
+People interested to contribute to the development of Fapws3 can contact me on william _dot_ os4y -at- gmail.com
+
 
 License
 -------
