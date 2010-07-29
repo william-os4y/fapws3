@@ -40,7 +40,7 @@
 #define BACKLOG 1024     // how many pending connections queue will hold
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 9   //number of connection retry
-#define VERSION "0.6"
+#define VERSION "0.7"
 #define MAX_TIMERS 10 //maximum number of running timers
 
 /*
