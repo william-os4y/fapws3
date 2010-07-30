@@ -12,9 +12,6 @@ def find_file(fname, dirs):
         fpname=os.path.join(ckdir,fname)
         if os.path.isfile(fpname):
             founded=True
-        if founded:
-            print "----------Find",fname," in ", ckdir
-            return ckdir
         #we don't find it, it can be located into a subdirectory ;-)
         localdirs=[]
         try:
@@ -25,6 +22,12 @@ def find_file(fname, dirs):
             fpname=os.path.join(ckdir,elem)
             if os.path.isdir(fpname):
                 localdirs.append(fpname)
+            if elem[:len(fname)]==fname:
+                founded=True
+                break
+        if founded:
+            print "----------Find",fname," in ", ckdir
+            return ckdir
         if localdirs:
             res=find_file(fname,localdirs)
             if res:
@@ -69,7 +72,7 @@ if res==False:
 include_dirs.append(res)
 res=find_file('libev.so',search_library_dirs)
 if res==False:
-    print "We don't find 'libev.a' which is a mandatory file to run Fapws"
+    print "We don't find 'libev.so' which is a mandatory file to run Fapws"
     print "Please install libev, or provide the path by setting the shell environmental variable LD_LIBRARY_PATH"
     sys.exit(1)
 library_dirs.append(res)
