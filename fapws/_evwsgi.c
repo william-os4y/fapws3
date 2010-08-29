@@ -42,7 +42,6 @@
 #define MAX_RETRY 9   //number of connection retry
 #define VERSION "0.7"
 #define MAX_TIMERS 10 //maximum number of running timers
-#define DEFER_QUEUE_MAX_SIZE 1000 //maximum number of function in the defer queue
 /*
 Structure we use for each client's connection. 
 */
@@ -519,7 +518,7 @@ manage_header_body(struct client *cli, PyObject *pyenviron)
     {
         char *ct=PyString_AsString(pydummy);
         if (strncasecmp(ct, "multipart", 9)!=0) 
-        {
+        { 
             pydummy=parse_query(cli->input_body);
             PyDict_SetItemString(pyenviron,"fapws.params",pydummy);
             Py_DECREF(pydummy);
@@ -613,23 +612,20 @@ python_handler(struct client *cli)
          {
              cli->wsgi_cb=py_generic_cb;
              Py_INCREF(cli->wsgi_cb);
+             cli->uri_path=(char *)calloc(1, sizeof(char));
+             strcpy(cli->uri_path,"");
          }
-     }
-     else
-     {
-        // 4) build path_info, ...
-        pydict=py_build_method_variables(cli);
-        update_environ(pyenviron, pydict, "update_uri");
-        Py_DECREF(pydict);   
-        // 5) in case of POST, put it into the wsgi.input
-        if (strcmp(cli->cmd,"POST")==0)
-        {
-            //printf("manage the post\n");
-            ret=manage_header_body(cli, pyenviron);
-            //printf("manage header return:%i\n",ret);
-            if (ret < 0) {
-                return ret;
-            }
+    }
+    // 4) build path_info, ...
+    pydict=py_build_method_variables(cli);
+    update_environ(pyenviron, pydict, "update_uri");
+    Py_DECREF(pydict);   
+    // 5) in case of POST, put it into the wsgi.input
+    if (strcmp(cli->cmd,"POST")==0)
+    {
+        ret=manage_header_body(cli, pyenviron);
+        if (ret < 0) {
+            return ret;
         }
     }
     //  6) add some request info
@@ -1428,10 +1424,6 @@ py_defer(PyObject *self, PyObject *args)
     {
         //it has been stopped by the idle_cb
         startidle=1;    
-    }
-    if (listsize > DEFER_QUEUE_MAX_SIZE)
-    {
-        printf("WARNING!!! The defer queue has reached his maximum size:%i. It's now:%i\n", DEFER_QUEUE_MAX_SIZE, listsize);
     }
     //add fct cb into the defer queue
     PyObject *pyelem=PyList_New(0);
