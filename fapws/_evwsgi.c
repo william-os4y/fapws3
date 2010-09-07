@@ -286,6 +286,9 @@ header_to_dict(struct client *cli)
     assert(buff1!=NULL);
     head = (char *)calloc(strlen(cli->input_header)+1, sizeof(char));
     assert(head!=NULL);
+    pyval = Py_BuildValue("s", cli->input_header); 
+     PyDict_SetItemString(pydict, "fapws.raw_header", pyval);
+     Py_DECREF(pyval);
     stripChar(cli->input_header, buff1, '\r'); //every lines ends with \r\n. For simplicity we just remove \r 
     http_version=strsep(&buff1, "\n");
     if (!http_version)
