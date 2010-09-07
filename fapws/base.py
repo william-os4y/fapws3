@@ -151,8 +151,7 @@ class Start_response:
     def __str__(self):
         res = "HTTP/1.1 %s %s\r\n" % (self.status_code, self.status_reasons)
         for key, val in self.response_headers.items():
-            if key.upper() != "SET-COOKIE":
-                res += '%s: %s\r\n' % (key,val)
+            res += '%s: %s\r\n' % (key,val)
         if self.cookies:
             res+=str(self.cookies)+"\r\n"
         res += "\r\n"
