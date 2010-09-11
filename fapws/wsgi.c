@@ -138,6 +138,42 @@ a dictionary key and list of values
 
 
 
+#define CR '\r'
+#define LF '\n'
+#define BLANK ' '
+#define KEY_SEP ':'
+
+enum state
+  { s_stop = 1 ,
+    s_firstline_start,
+    s_firstline_w1,
+    s_firstline_w2,
+    s_header_key,
+    s_header_val,
+    s_body
+  };
+ 
+ 
+
+ void set_char(char *from, char *to, int i, int *j)
+ {
+    int t;
+    t=*j;
+     if (t==0 && (from[i]==CR || from[i]==LF || from[i]==BLANK))
+     {
+     //printf("Character to skip\n");
+     } 
+     else
+    {
+       to[t]=from[i];
+       t++;
+       *j=t;
+    }
+
+}
+
+
+
 /*
 This procedure transform the header to something required by wsgi.
 */
@@ -160,87 +196,143 @@ void transform_header_key_to_wsgi_key(char *src, char *dest)
 /*
 This method transform the received html header to a wsgi dictionary.
 */
-PyObject *header_to_dict(struct client *cli)
+PyObject * header_to_dict (struct client *cli)
 {
-    char *http_version, *protocol, *uri, *cmd, *head, *value;
-    char *buff1, *buff2;
-    PyObject *pydict = PyDict_New();
-    PyObject *pyval;
-    //we first analyse the first line of the header
-    //printf("header_to_dict:port:%i, len=%i,%s**\n", cli->remote_port, (int)strlen(cli->input_header), cli->input_header);
-    buff1 = (char *)calloc(strlen(cli->input_header)+1, sizeof(char));
-    assert(buff1!=NULL);
-    head = (char *)calloc(strlen(cli->input_header)+1, sizeof(char));
-    assert(head!=NULL);
-    pyval = Py_BuildValue("s", cli->input_header); 
-     PyDict_SetItemString(pydict, "fapws.raw_header", pyval);
-     Py_DECREF(pyval);
-    stripChar(cli->input_header, buff1, '\r'); //every lines ends with \r\n. For simplicity we just remove \r 
-    http_version=strsep(&buff1, "\n");
-    if (!http_version)
-         return Py_None;
-    cmd=strsep(&http_version," ");
-     if (!cmd)
-         return Py_None;
-     cli->cmd=(char *)calloc(strlen(cmd)+1, sizeof(char));
-     assert(cli->cmd);
-     strcpy(cli->cmd, cmd);   // will be cleaned with cli
-     pyval = Py_BuildValue("s", cmd );
-     PyDict_SetItemString(pydict, "REQUEST_METHOD", pyval);
-     Py_DECREF(pyval);
-    uri=strsep(&http_version," ");
-     if (!uri)
-         return Py_None;
-     cli->uri=(char *)calloc(strlen(uri)+1, sizeof(char));
-     assert(cli->uri);
-     strcpy(cli->uri, uri);   // will be cleaned with cli
-     pyval = Py_BuildValue("s", uri );
-     PyDict_SetItemString(pydict, "fapws.uri", pyval);
-     Py_DECREF(pyval);
-    pyval = Py_BuildValue("s", http_version ); // stays HTTP/1.1
-     PyDict_SetItemString(pydict, "HTTP_PROTOCOL", pyval);
-     Py_DECREF(pyval);
-    protocol=strsep(&http_version, "/");
-     if (!protocol)
-         return Py_None;
-    cli->protocol=(char *)calloc(strlen(protocol)+1, sizeof(char));
-     assert(cli->protocol);
-     strcpy(cli->protocol, protocol);   // will be cleaned with cli
-    pyval = Py_BuildValue("s", http_version );
-     PyDict_SetItemString(pydict, "fapws.major_minor", pyval); // can be 0.9, 1.0 or 1.1
-     Py_DECREF(pyval);
-        
+   char ch, *buf;
+   int len;
+   enum state state;
+   int i;
+   int j=0;
+   int sw_query_string=0;
+   char *data;
+   char *buf2;
+   
+   buf=cli->input_header;
+   
+   PyObject *pydict = PyDict_New();
+   PyObject *pyval;
+   PyObject *pyheader_key;
 
-    pyval = Py_BuildValue("s", server_name );
-    PyDict_SetItemString(pydict, "SERVER_NAME", pyval);
-    Py_DECREF(pyval);
-    pyval = Py_BuildValue("s", server_port );
-    PyDict_SetItemString(pydict, "SERVER_PORT", pyval);
-    Py_DECREF(pyval);
-    //then we analyze all the other lines up to the body (not included) of the header 
-    while (*buff1!='\n')
-    {
-        value=strsep(&buff1, "\n");
-	if (!buff1)  //we have not found any \n
-              break;
-        buff2=strsep(&value, ":"); // the first ":" delimit the header and the value
-        if (!value)  //we don't have found the ":"
-            continue;
-        if (strlen(buff2)>0)
-        { 
-            buff2=remove_leading_and_trailing_spaces(buff2);
-            transform_header_key_to_wsgi_key(buff2, head);
-            value=remove_leading_and_trailing_spaces(value);
-            pyval = Py_BuildValue("s", value );
-            PyDict_SetItemString(pydict, head, pyval);
-            Py_DECREF(pyval);
-        }
-    }
-    free(head);  
-    //free(buff1); // TODO ?? to verify !! why not free it ??
-    free(cmd); 
-    return pydict;
+   pyval = Py_BuildValue("s", cli->input_header); 
+   PyDict_SetItemString(pydict, "fapws.raw_header", pyval);
+   Py_DECREF(pyval);
+
+   
+   len=strlen(buf);
+   data=malloc(len);
+   buf2=malloc(len);
+
+   state=s_firstline_start;
+   for (i=0;i<len;i++)
+   {
+     ch=buf[i];
+     //printf("%i - %i\n",i, j);
+     switch (state)
+     {
+       case s_firstline_start:
+         set_char(buf, data, i, &j);
+         if (ch==BLANK)
+         { 
+           state=s_firstline_w1;
+           data[j-1]='\0';
+           j=0;
+           //printf("METHOD:%s***\n",data);
+           cli->cmd=malloc(strlen(data)+1);
+           assert(cli->cmd);
+           strcpy(cli->cmd, data);   // will be cleaned with cli
+           pyval = Py_BuildValue("s",data);
+           PyDict_SetItemString(pydict, "REQUEST_METHOD", pyval);
+           Py_DECREF(pyval);
+         }
+         break;
+     case s_firstline_w1:
+         set_char(buf, data, i, &j);
+         if (ch=='?') sw_query_string=j+1;
+         if (ch==BLANK)
+         { 
+           state=s_firstline_w2;
+           data[j-1]='\0';
+           //printf("PATH:%s***\n",data);
+           pyval = Py_BuildValue("s",data);
+           PyDict_SetItemString(pydict, "fapws.uri", pyval);
+           Py_DECREF(pyval);
+           cli->uri=malloc(strlen(data)+1);
+           assert(cli->uri);
+           strcpy(cli->uri, data);   // will be cleaned with cli
+           char *query_string;
+           query_string=data+sw_query_string-1;
+           //printf("QUERY_STRING:%s***\n", query_string);
+           pyval = Py_BuildValue("s",query_string);
+           PyDict_SetItemString(pydict, "QUERY_STRING", pyval);
+           Py_DECREF(pyval);
+           j=0;
+           
+         }
+         break;
+     case s_firstline_w2:
+         set_char(buf, data, i, &j);
+         if (ch==CR)
+         { 
+           state=s_header_key;
+           data[j-1]='\0';
+           //printf("PROTOCOL FULL:%s***\n",data);
+           pyval = Py_BuildValue("s",data);
+           PyDict_SetItemString(pydict, "HTTP_PROTOCOL", pyval);
+           Py_DECREF(pyval);
+           char *major_minor;
+           major_minor=data+j-1-3;
+           //printf("MAJOR MINOR:%s***\n",major_minor); 
+           pyval = Py_BuildValue("s",major_minor);
+           PyDict_SetItemString(pydict, "fapws.major_minor", pyval);
+           Py_DECREF(pyval);
+           char *protocol=data;
+           protocol[j-1-4]='\0'; //remove "/1.1" for example
+           //printf("PROTOCOL:%s***\n",protocol); 
+           cli->protocol=malloc(strlen(protocol));
+           assert(cli->protocol);
+           strcpy(cli->protocol, protocol);   // will be cleaned with cli
+           j=0;
+         }
+         break;
+     case s_header_key:
+         if (buf[i]==CR) state=s_body;
+         set_char(buf, data, i, &j);
+         if (ch==KEY_SEP)
+         { 
+           state=s_header_val;
+           data[j-1]='\0';
+           j=0;
+           //printf("KEY:%s***\n",data);
+           transform_header_key_to_wsgi_key(data, buf2);
+           pyheader_key=Py_BuildValue("s",buf2);
+           
+         }
+         break;
+     case s_header_val:
+         set_char(buf, data, i, &j);
+         if (ch==CR)
+         { 
+           state=s_header_key;
+           data[j-1]='\0';
+           j=0;
+           //printf("VAL:%s***\n",data);
+           pyval = Py_BuildValue("s",data);
+           PyDict_SetItem(pydict, pyheader_key, pyval);
+           Py_DECREF(pyval);
+           Py_DECREF(pyheader_key);
+         }
+         break;
+     case s_body:
+         set_char(buf, data, i, &j);
+         break;
+     }
+   }
+   data[j]='\0';
+   //printf("BODY:%s***\n",data);
+
+   return pydict;
 }
+
 
 
 /*
@@ -258,9 +350,6 @@ PyObject *py_build_method_variables( struct client *cli)
     Py_DECREF(pydummy);
     pydummy=PyString_FromString(server_port);
     PyDict_SetItemString(pydict, "SERVER_PORT", pydummy);
-    Py_DECREF(pydummy);
-    pydummy=PyString_FromString(cli->uri);
-    PyDict_SetItemString(pydict, "fapws.uri", pydummy);
     Py_DECREF(pydummy);
    
     // Clean up the uri 

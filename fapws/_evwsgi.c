@@ -395,7 +395,6 @@ static PyMethodDef EvhttpMethods[] = {
     {"restart_timer", py_restart_timer, METH_VARARGS, "Restart an existing timer"},
     {"defer", py_defer, METH_VARARGS, "defer the execution of a python function."},
     {"defer_queue_size", py_defer_queue_size, METH_VARARGS, "Get the size of the defer queue"},
-    {"nheader", nheader_to_dict, METH_VARARGS, ""},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
