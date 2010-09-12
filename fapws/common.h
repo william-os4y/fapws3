@@ -2,6 +2,8 @@
 #include <Python.h>
 
 
+#define MAXHEADER 4096
+
 
 /*
 Structure we use for each client's connection. 
@@ -23,7 +25,7 @@ struct client {
         char *uri_path;   //correspond to the registered uri_header 
         PyObject *wsgi_cb;
         int response_iter_sent; //-2: nothing sent, -1: header sent, 0-9999: iter sent
-        char *response_header;
+        char response_header[MAXHEADER];
         int response_header_length;
         PyObject *response_content;
         PyObject *response_content_obj;

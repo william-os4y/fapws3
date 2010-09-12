@@ -30,7 +30,8 @@ PyObject *py_config_module; //to store the fapws.config module
 PyObject *py_registered_uri; //list containing the uri registered and their associated wsgi callback.
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 9   //number of connection retry
-#define VERSION "fapws3/0.7.1"
+
+char * VERSION;
 PyObject *py_generic_cb; 
 
 
@@ -79,7 +80,6 @@ void close_connection(struct client *cli)
     free(cli->uri);
     free(cli->protocol);
     free(cli->uri_path);
-    //free(cli->response_header);
     Py_XDECREF(cli->response_content);
     if (cli->response_content_obj!=NULL)
     {
@@ -240,7 +240,7 @@ int python_handler(struct client *cli)
     //  2ter) we treat directly the OPTIONS command
     if (strcmp(cli->cmd,"OPTIONS")==0)
     {
-        pydummy=PyString_FromString("HTTP/1.0 200 OK\r\nServer: " VERSION "\r\nAllow: ") ;
+        pydummy=PyString_FromFormat("HTTP/1.0 200 OK\r\nServer: %s\r\nAllow: ", VERSION) ;
         PyObject *pyitem; 
         int index, max;
         max = PyList_Size(pysupportedhttpcmd);
@@ -252,7 +252,7 @@ int python_handler(struct client *cli)
                PyString_Concat(&pydummy, PyString_FromString(", "));
         }
         PyString_Concat(&pydummy, PyString_FromString("\r\nContent-Length: 0\r\n\r\n"));
-        cli->response_header=PyString_AsString(pydummy);
+        strcpy(cli->response_header,PyString_AsString(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         cli->response_content=PyList_New(0);
         Py_DECREF(pyenviron);
@@ -312,20 +312,20 @@ int python_handler(struct client *cli)
     if (cli->response_content!=NULL) 
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
-        /*char *temp=NULL;
-	temp=PyString_AsString(pydummy);
-        Py_DECREF(pydummy);
-        cli->response_header=(char *)calloc(strlen(temp)+1, sizeof(char));
-        strcpy(cli->response_header, temp);*/
-        cli->response_header=PyString_AsString(pydummy);
+        strcpy(cli->response_header,PyString_AsString(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         Py_DECREF(pydummy);
     }
     else 
     //python call return is NULL
     {
-        printf("Python error\n");
-        cli->response_header="HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n";
+        printf("Python error!!!\n");
+        if (str_append3(cli->response_header,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n", MAXHEADER)<0)
+        {
+             printf("ERROR!!!! Response header bigger than foreseen:%i", MAXHEADER);
+             printf("HEADER TOP\n%s\nHEADER BOT\n", cli->response_header);
+             return -1;
+        }
 	cli->response_header_length=strlen(cli->response_header);
         if (PyErr_Occurred()) 
         { 
@@ -429,7 +429,7 @@ This is the write call back registered within the event loop
 */
 void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 { 
-    char *response;
+    char response[MAXHEADER];
     int stop=0; //0: not stop, 1: stop, 2: stop and call tp close
     int ret; //python_handler return
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
@@ -440,26 +440,26 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         if (ret==0) //look for python callback and execute it
         {
             //uri not found
-            response= "HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>";
+            str_append3(response,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ", VERSION ,"\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>", MAXHEADER);
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         } 
         else if (ret==-411)
         {
-            response="HTTP/1.0 411 Length Required\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>";
+            str_append3(response,"HTTP/1.0 411 Length Required\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>", MAXHEADER);
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
         else if (ret==-500)
         {
-            response="HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n<html><head><title>Internal Server Error</head><body><p>Internal Server Error!!!</p></body></html>";
+            str_append3(response,"HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n<html><head><title>Internal Server Error</head><body><p>Internal Server Error!!!</p></body></html>", MAXHEADER);
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
         else if (ret==-501)
         {
             //problem to parse the request
-            response="HTTP/1.0 501 Not Implemented\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>";
+            str_append3(response,"HTTP/1.0 501 Not Implemented\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>", MAXHEADER);
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
@@ -707,7 +707,7 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->protocol=NULL;
     cli->uri_path=NULL;
     cli->wsgi_cb=NULL;
-    cli->response_header=NULL;
+    cli->response_header[0]='\0';
     cli->response_content=NULL;
     cli->response_content_obj=NULL;
     if (debug)

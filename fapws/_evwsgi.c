@@ -48,7 +48,7 @@ char *server_name="127.0.0.1";
 char *server_port="8000";
 int sockfd;  // main sock_fd
 int debug=0; //1 full debug detail: 0 nodebug
-
+char *VERSION;
 #define BACKLOG 1024     // how many pending connections queue will hold
 
 
@@ -200,6 +200,11 @@ static PyObject *py_set_base_module(PyObject *self, PyObject *args)
     py_config_module=PyObject_GetAttrString(py_base_module, "config");
     py_registered_uri = PyList_New(0);
 
+    //Get the version from the config.py file
+    PyObject *pyver=PyObject_GetAttrString(py_config_module,"SERVER_IDENT");
+    VERSION=PyString_AsString(pyver);
+    
+    
     return Py_None;    
 }
 
