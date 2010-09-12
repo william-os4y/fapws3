@@ -12,7 +12,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-SERVER_IDENT = "fapws3/0.7.1"
+SERVER_IDENT = "fapws3/0.8"
 send_traceback_to_browser=True
 #in case of False for send_traceback_to_browser, send_traceback_short will be sent to the browser
 send_traceback_short="<h1>Error</h1>Please contact your administrator"
