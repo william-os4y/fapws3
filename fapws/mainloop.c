@@ -30,8 +30,11 @@ PyObject *py_config_module; //to store the fapws.config module
 PyObject *py_registered_uri; //list containing the uri registered and their associated wsgi callback.
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 9   //number of connection retry
-#define VERSION "0.7.1"
+#define VERSION "fapws3/0.7.1"
 PyObject *py_generic_cb; 
+
+
+
 
 /*
 Just to assure the connection will be nonblocking
@@ -60,6 +63,8 @@ void update_environ(PyObject *pyenviron, PyObject *pydict, char *method)
     PyObject_CallFunction(pyupdate, "(O)", pydict);
     Py_DECREF(pyupdate);
 }
+
+
 
 
 /*
@@ -235,7 +240,7 @@ int python_handler(struct client *cli)
     //  2ter) we treat directly the OPTIONS command
     if (strcmp(cli->cmd,"OPTIONS")==0)
     {
-        pydummy=PyString_FromString("HTTP/1.0 200 OK\r\nServer: fapws3/" VERSION "\r\nAllow: ");
+        pydummy=PyString_FromString("HTTP/1.0 200 OK\r\nServer: " VERSION "\r\nAllow: ") ;
         PyObject *pyitem; 
         int index, max;
         max = PyList_Size(pysupportedhttpcmd);
@@ -320,7 +325,7 @@ int python_handler(struct client *cli)
     //python call return is NULL
     {
         printf("Python error\n");
-        cli->response_header="HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n";
+        cli->response_header="HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n";
 	cli->response_header_length=strlen(cli->response_header);
         if (PyErr_Occurred()) 
         { 
@@ -435,26 +440,26 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         if (ret==0) //look for python callback and execute it
         {
             //uri not found
-            response="HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>";
+            response= "HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         } 
         else if (ret==-411)
         {
-            response="HTTP/1.0 411 Length Required\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>";
+            response="HTTP/1.0 411 Length Required\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
         else if (ret==-500)
         {
-            response="HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Internal Server Error</head><body><p>Internal Server Error!!!</p></body></html>";
+            response="HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n<html><head><title>Internal Server Error</head><body><p>Internal Server Error!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
         else if (ret==-501)
         {
             //problem to parse the request
-            response="HTTP/1.0 501 Not Implemented\r\nContent-Type: text/html\r\nServer: fapws3/" VERSION "\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>";
+            response="HTTP/1.0 501 Not Implemented\r\nContent-Type: text/html\r\nServer: " VERSION "\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>";
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
