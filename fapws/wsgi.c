@@ -277,6 +277,10 @@ PyObject * header_to_dict (struct client *cli)
            pyval = PyString_FromStringAndSize(data, j-1-4); //remove "/1.1" for example
            PyDict_SetItemString(pydict, "wsgi.url_scheme", pyval);
            Py_DECREF(pyval);
+           pyval = PyString_FromString(data); 
+           PyDict_SetItemString(pydict, "SERVER_PROTOCOL", pyval);
+           PyDict_SetItemString(pydict, "REQUEST_PROTOCOL", pyval);
+           Py_DECREF(pyval);
            j=0;
          }
          break;
