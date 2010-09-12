@@ -102,7 +102,6 @@ int str_append3(char *dest, char *src1, char *src2, char *src3, int n)
        if (i>=n) ret=-3;
    }
    *dest='\0';  
-   printf("DEST LEN:%i\n",i);
    if (ret==1) return ret;
    else return i;
 }
