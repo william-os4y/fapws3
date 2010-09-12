@@ -211,7 +211,7 @@ PyObject * header_to_dict (struct client *cli)
    
    PyObject *pydict = PyDict_New();
    PyObject *pyval;
-   PyObject *pyheader_key;
+   PyObject *pyheader_key=NULL;
 
    pyval = Py_BuildValue("s", cli->input_header); 
    PyDict_SetItemString(pydict, "fapws.raw_header", pyval);
@@ -330,6 +330,8 @@ PyObject * header_to_dict (struct client *cli)
    data[j]='\0';
    //printf("BODY:%s***\n",data);
 
+   free(data);
+   free(buf2);
    return pydict;
 }
 
