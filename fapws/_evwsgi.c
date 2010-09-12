@@ -39,7 +39,6 @@
 #include "common.h"
 #include "mainloop.h"
 #include "wsgi.h"
-#include "newparser.h"
 
 
 /*
@@ -64,6 +63,8 @@ int list_timers_i=0; //number of values entered in the array list_timers
 struct ev_loop *loop; // we define a global loop
 PyObject *pydeferqueue;  //initialisation of defer
 ev_idle *idle_watcher;
+
+
 
 
 /*
@@ -198,6 +199,7 @@ static PyObject *py_set_base_module(PyObject *self, PyObject *args)
         return NULL;
     py_config_module=PyObject_GetAttrString(py_base_module, "config");
     py_registered_uri = PyList_New(0);
+
     return Py_None;    
 }
 
