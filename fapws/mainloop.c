@@ -78,7 +78,6 @@ void close_connection(struct client *cli)
     free(cli->input_header);
     free(cli->cmd);
     free(cli->uri);
-    free(cli->protocol);
     free(cli->uri_path);
     Py_XDECREF(cli->response_content);
     if (cli->response_content_obj!=NULL)
@@ -704,7 +703,6 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->input_body=NULL;
     cli->uri=NULL;
     cli->cmd=NULL;
-    cli->protocol=NULL;
     cli->uri_path=NULL;
     cli->wsgi_cb=NULL;
     cli->response_header[0]='\0';

@@ -73,17 +73,10 @@ Cache-Control: max-age=0\r\n
 
 Request becomes:
 ----------------
-REQUEST_METHOD fapws.uri HTTP_PROTOCOL\r\n
+REQUEST_METHOD fapws.uri wsgi.url_scheme/fapws.major_minor\r\n
 HTTP_<header>:<value>\r\n
 \r\n
 <wsgi.input>\r\n
-
-
-HTTP_PROTOCOL becomes:
-----------------------
-fapws.protocol and (wsgi.url_scheme) ???? / fapws.major_minor 
-
-fapws.protocol must go and url_Scheme is in lowercase
 
 
 fapws.uri becomes
@@ -100,7 +93,6 @@ a dictionary key and list of values
  'fapws.uri': '/hello/toto?param=key', 
  'fapws.raw_header': '...'
  'fapws.major_minor': '1.1', 
- 'fapws.protocol': 'HTTP', 
  'fapws.remote_addr': '127.0.0.1', 
  'fapws.remote_port': 60580, 
  'REQUEST_METHOD': 'GET', 
@@ -276,21 +268,15 @@ PyObject * header_to_dict (struct client *cli)
            state=s_header_key;
            data[j-1]='\0';
            //printf("PROTOCOL FULL:%s***\n",data);
-           pyval = Py_BuildValue("s",data);
-           PyDict_SetItemString(pydict, "HTTP_PROTOCOL", pyval);
-           Py_DECREF(pyval);
            char *major_minor;
            major_minor=data+j-1-3;
            //printf("MAJOR MINOR:%s***\n",major_minor); 
-           pyval = Py_BuildValue("s",major_minor);
+           pyval = PyString_FromString(major_minor);
            PyDict_SetItemString(pydict, "fapws.major_minor", pyval);
            Py_DECREF(pyval);
-           char *protocol=data;
-           protocol[j-1-4]='\0'; //remove "/1.1" for example
-           //printf("PROTOCOL:%s***\n",protocol); 
-           cli->protocol=malloc(strlen(protocol));
-           assert(cli->protocol);
-           strcpy(cli->protocol, protocol);   // will be cleaned with cli
+           pyval = PyString_FromStringAndSize(data, j-1-4); //remove "/1.1" for example
+           PyDict_SetItemString(pydict, "wsgi.url_scheme", pyval);
+           Py_DECREF(pyval);
            j=0;
          }
          break;
@@ -407,9 +393,6 @@ PyObject *py_get_request_info(struct client *cli)
     Py_DECREF(pydummy);
     pydummy=Py_BuildValue("H", cli->remote_port);
     PyDict_SetItemString(pydict, "fapws.remote_port", pydummy);
-    Py_DECREF(pydummy);
-    pydummy=PyString_FromString(cli->protocol);
-    PyDict_SetItemString(pydict, "fapws.protocol", pydummy);
     Py_DECREF(pydummy);
     return pydict;
 }

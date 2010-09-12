@@ -20,7 +20,6 @@ struct client {
         int retry;
         char *uri;
         char *cmd;
-        char *protocol;
         char *http_major_minor;
         char *uri_path;   //correspond to the registered uri_header 
         PyObject *wsgi_cb;
