@@ -33,7 +33,7 @@ PyObject *py_registered_uri; //list containing the uri registered and their asso
 
 char * VERSION;
 PyObject *py_generic_cb; 
-
+char * date_format;
 
 
 
@@ -295,6 +295,19 @@ int python_handler(struct client *cli)
     PyObject *pystart_response_class=PyObject_GetAttrString(py_base_module, "Start_response");
     PyObject *pystart_response=PyInstance_New(pystart_response_class, NULL, NULL);
     Py_DECREF(pystart_response_class);
+    // 7b) add the current date to the response object
+    PyObject *py_response_header=PyObject_GetAttrString(pystart_response,"response_headers");
+    char *sftime;
+    sftime=cur_time(date_format);
+    pydummy = PyString_FromString(sftime);
+    PyDict_SetItemString(py_response_header, "Date", pydummy);
+    Py_DECREF(pydummy);
+    Py_DECREF(py_response_header);
+    free(sftime);
+    pydummy = PyString_FromString(VERSION);
+    PyDict_SetItemString(py_response_header, "Server", pydummy);
+    Py_DECREF(pydummy);
+    
     // 8) execute python callbacks with his parameters
     PyObject *pyarglist = Py_BuildValue("(OO)", pyenviron, pystart_response );
     cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
@@ -640,6 +653,7 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             if (debug)
                 printf("host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i\n", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
             // if \r\n\r\n then end of header   
+            
             cli->input_body=strstr(cli->input_header, "\r\n\r\n"); //use memmem ???
             int header_lentgh =cli->input_body-cli->input_header;
             if (cli->input_body!=NULL)
@@ -664,6 +678,7 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
          }
          if (read_finished)
          {
+            //printf("read_finished\n");
             ev_io_stop(EV_A_ w);
             if (strlen(cli->input_header)>0)
             {

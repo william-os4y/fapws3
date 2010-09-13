@@ -50,7 +50,7 @@ int sockfd;  // main sock_fd
 int debug=0; //1 full debug detail: 0 nodebug
 char *VERSION;
 #define BACKLOG 1024     // how many pending connections queue will hold
-
+char *date_format;
 
 
 PyObject *py_base_module;  //to store the fapws.base python module
@@ -203,6 +203,11 @@ static PyObject *py_set_base_module(PyObject *self, PyObject *args)
     //Get the version from the config.py file
     PyObject *pyver=PyObject_GetAttrString(py_config_module,"SERVER_IDENT");
     VERSION=PyString_AsString(pyver);
+    
+    //get the date format
+    PyObject *pydateformat=PyObject_GetAttrString(py_config_module,"date_format");
+    date_format=PyString_AsString(pydateformat);
+    
     
     
     return Py_None;    

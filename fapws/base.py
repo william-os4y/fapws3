@@ -103,12 +103,10 @@ class Start_response:
         self.status_reasons = "OK"
         self.response_headers = {}
         self.exc_info = None
-        self.cookies = SimpleCookie()
+        self.cookies = None 
         # NEW -- sent records whether or not the headers have been send to the
         # client
         self.sent= False
-        self.response_headers['Date'] = datetime.datetime.now().strftime('%a, %d %b %Y %H:%M:%S GMT')
-        self.response_headers['Server'] = config.SERVER_IDENT
 
     def __call__(self, status, response_headers, exc_info=None):
         self.status_code, self.status_reasons = status.split(" ",1)
@@ -125,6 +123,8 @@ class Start_response:
         val=str(val)
         self.response_headers[key]=val
     def set_cookie(self, key, value='', max_age=None, expires=None, path='/', domain=None, secure=None):
+        if not self.cookies:
+            self.cookies=SimpleCookie()
         self.cookies[key] = value
         self.response_headers['Set-Cookie'] = self.cookies
         if max_age:
@@ -133,7 +133,7 @@ class Start_response:
             if isinstance(expires, str):
                 self.cookies[key]['expires'] = expires
             elif isinstance(expires, datetime.datetime):
-                expires = expires.strftime('%a, %d %b %Y %H:%M:%S GMT')
+                expires = expires.strftime(config.date_format)
             else:
                 raise CookieError, 'expires must be a datetime object or a string'
             self.cookies[key]['expires'] = expires
@@ -154,7 +154,7 @@ class Start_response:
         if self.cookies:
             res+=str(self.cookies)+"\r\n"
         res += "\r\n"
-        return str(res)
+        return res
         
 def redirectStdErr():
     """

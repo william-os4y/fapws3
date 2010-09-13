@@ -1,3 +1,4 @@
+#include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,6 +8,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include "extra.h"
+
 
 
 
@@ -105,4 +107,34 @@ int str_append3(char *dest, char *src1, char *src2, char *src3, int n)
    if (ret==1) return ret;
    else return i;
 }
+
+
+
+/*
+Provide a string representation of the current time
+*/
+char *cur_time(char *fmt)
+{
+    int len=200;
+    char *outstr;
+    time_t t;
+    struct tm *tmp;
+   
+    outstr=malloc(len);
+    t = time(NULL);
+    tmp = gmtime(&t);
+    if (tmp == NULL) {
+        perror("gmtime");
+        return NULL;
+    }
+
+    if (strftime(outstr, len, fmt, tmp) == 0) { //this is the time format taken from lighttpd
+        fprintf(stderr, "strftime returned 0");
+        return NULL;
+    }
+
+    //printf("Result string is \"%s\"\n", outstr);
+    return outstr;
+} /* main */
+
 
