@@ -363,9 +363,13 @@ int python_handler(struct client *cli)
              PyObject *pysendtraceback = PyObject_GetAttrString(py_config_module,"send_traceback_to_browser");
              cli->response_content=PyList_New(0);
              if (pysendtraceback==Py_True) {
-                PyList_Append(cli->response_content, PyString_FromString("<h1>Error</h1><pre>"));
+                pydummy = PyString_FromString("<h1>Error</h1><pre>");
+                PyList_Append(cli->response_content, pydummy );
+                Py_DECREF(pydummy);
                 PyList_Append(cli->response_content, pyres);
-                PyList_Append(cli->response_content, PyString_FromString("</pre>"));
+                pydummy = PyString_FromString("</pre>");
+                PyList_Append(cli->response_content, pydummy);
+                Py_DECREF(pydummy);
              } else {
                 PyObject *pyshortmsg = PyObject_GetAttrString(py_config_module,"send_traceback_short");
                 PyList_Append(cli->response_content, pyshortmsg);
@@ -377,7 +381,9 @@ int python_handler(struct client *cli)
          else 
          {
              cli->response_content=PyList_New(0);
-             PyList_Append(cli->response_content, PyString_FromString("Page not found."));
+             pydummy = PyString_FromString("Page not found.");
+             PyList_Append(cli->response_content, pydummy );
+             Py_DECREF(pydummy);
          }
     }
     Py_XDECREF(pystart_response);
