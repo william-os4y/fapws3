@@ -226,7 +226,8 @@ int python_handler(struct client *cli)
     Py_DECREF(pydict);   
     //  2bis) we check if the request method is supported
     PyObject *pysupportedhttpcmd = PyObject_GetAttrString(py_base_module, "supported_HTTP_command");
-    pydummy = PyString_FromString(cli->cmd);
+    if (cli->cmd==NULL) pydummy=Py_None; 
+    else pydummy = PyString_FromString(cli->cmd);
     if (PySequence_Contains(pysupportedhttpcmd,pydummy)!=1)
     {
         //return not implemented 
