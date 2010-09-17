@@ -149,6 +149,13 @@ if 1:
   content=response.read()
   test("Traceback", response.status==500 , content)
 
+  print "=== Bad command ==="
+  con.request("!çàù","")
+  response=con.getresponse()
+  content=response.read()
+  test("Not Implemented", response.status==501 , content)
+  
+
 
 print "=================="
 print "TOTAL successes:", successes
