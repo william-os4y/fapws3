@@ -1,0 +1,5 @@
+ Just run the Fapws server: python server.py
+
+In an anoher shell, execute the tests: python test.py.
+
+If you have other idea of unit tests, feel free to provide them: william.os4y@gmail.com
