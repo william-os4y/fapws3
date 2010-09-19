@@ -35,14 +35,14 @@ class Staticfile:
             start_response('404 File not found',[])
             return []
         fmtime=os.path.getmtime(fpath)
-        if environ.get('HTTP_IF_MODIFIED_SINCE','NONE')!=str(fmtime):
+        if environ.get('HTTP_IF_NONE_MATCH','NONE')!=str(fmtime):
             headers=[]
             if self.maxage:
                 headers.append(('Cache-control', 'max-age=%s' % int(self.maxage+time.time())))
             #print "NEW", environ['fapws.uri']
             ftype=mimetypes.guess_type(fpath)[0]
             headers.append(('Content-Type',ftype))
-            headers.append(('Last-Modified',fmtime))
+            headers.append(('ETag',fmtime))
             headers.append(('Content-Length',os.path.getsize(fpath)))
             start_response('200 OK', headers)
             return f
