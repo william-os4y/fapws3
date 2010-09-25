@@ -675,7 +675,7 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 {
                     int bodylength=strtol(contentlenght+16, &err, 10);
                       //assure we have all body data
-                    if ((int)cli->input_pos==bodylength+4+header_lentgh)
+                    if ((int)cli->input_pos>=bodylength+4+header_lentgh)
                     {
                         read_finished=1;
                         cli->input_body+=4; // to skip the \r\n\r\n
