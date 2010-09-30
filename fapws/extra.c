@@ -138,3 +138,29 @@ char *cur_time(char *fmt)
 } /* main */
 
 
+
+char *time_rfc1123(time_t t)
+{
+    char *days_names[] ={ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+    char *month_names[] ={ "Jan", "Feb", "Mar", "Apr", "May", "Jun","Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    const int date_len = 29;
+    struct tm *tmp;
+    char *outstr = malloc(date_len+1);
+
+    tmp=gmtime(&t);
+    strftime(outstr, date_len+1, "---, %d --- %Y %H:%M:%S GMT", tmp); //reformat request by the rfc1123
+    memcpy(outstr, days_names[tmp->tm_wday], 3);
+    memcpy(outstr+8, month_names[tmp->tm_mon], 3);
+
+    return outstr;
+} 
+
+char *cur_time_rfc1123()
+{
+    time_t t;
+   
+    time(&t);
+
+    return time_rfc1123(t);
+}
+

@@ -39,6 +39,7 @@
 #include "common.h"
 #include "mainloop.h"
 #include "wsgi.h"
+#include "extra.h"
 
 
 /*
@@ -392,6 +393,21 @@ PyObject *py_defer_queue_size(PyObject *self, PyObject *args)
     }
 }
 
+/*
+
+*/
+PyObject *py_rfc1123_date(PyObject *self, PyObject *args)
+{
+    PyObject *pydate;
+    time_t t;
+    if (!PyArg_ParseTuple(args, "L", &t))
+        return NULL;
+    char *res=NULL;
+    res=time_rfc1123(t);
+    return PyString_FromString(res);
+}
+
+
 static PyMethodDef EvhttpMethods[] = {
     {"start", py_ev_start, METH_VARARGS, "Define evhttp sockets"},
     {"set_base_module", py_set_base_module, METH_VARARGS, "set you base module"},
@@ -407,6 +423,7 @@ static PyMethodDef EvhttpMethods[] = {
     {"restart_timer", py_restart_timer, METH_VARARGS, "Restart an existing timer"},
     {"defer", py_defer, METH_VARARGS, "defer the execution of a python function."},
     {"defer_queue_size", py_defer_queue_size, METH_VARARGS, "Get the size of the defer queue"},
+    {"rfc1123_date", py_rfc1123_date, METH_VARARGS, "trasnform a time (in sec) into a string compatible with the rfc1123"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 

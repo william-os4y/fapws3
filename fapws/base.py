@@ -22,7 +22,7 @@ except ImportError:
     import StringIO
 import traceback, sys, string
 
-
+import time
 
 import config
 
@@ -133,7 +133,7 @@ class Start_response:
             if isinstance(expires, str):
                 self.cookies[key]['expires'] = expires
             elif isinstance(expires, datetime.datetime):
-                expires = expires.strftime(config.date_format)
+                expires = evwsgi.rfc1123_date(time.mktime(expires.timetuple()))
             else:
                 raise CookieError, 'expires must be a datetime object or a string'
             self.cookies[key]['expires'] = expires

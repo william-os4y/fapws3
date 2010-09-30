@@ -299,7 +299,7 @@ int python_handler(struct client *cli)
     // 7b) add the current date to the response object
     PyObject *py_response_header=PyObject_GetAttrString(pystart_response,"response_headers");
     char *sftime;
-    sftime=cur_time(date_format);
+    sftime=cur_time_rfc1123();
     pydummy = PyString_FromString(sftime);
     PyDict_SetItemString(py_response_header, "Date", pydummy);
     Py_DECREF(pydummy);
