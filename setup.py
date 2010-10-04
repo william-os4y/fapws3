@@ -3,6 +3,8 @@ from setuptools import setup, find_packages, Extension
 import os
 import sys
 import os.path
+import distutils.sysconfig
+import platform
 
 def read_file(name):
     return open(os.path.join(os.path.dirname(__file__),name)).read()
@@ -58,6 +60,13 @@ if os.environ.has_key('LD_LIBRARY_PATH'):
 search_library_dirs.extend(['/usr/lib','/usr/local/lib','/opt/local/lib','/usr/lib64'])
 search_include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include'])
 
+version=platform.python_version_tuple()
+if int(version[0])==2 and int(version[1])>=6:
+    print "Find python 2.6 or higher"
+else:
+    print "Fapws has been developped with python 2.6 or higher (not yet python 3.X). Instead we found python %s.%s" % (version[0], version[1])
+    sys.exit(1)
+
 
 res=find_file('ev.h',search_include_dirs)
 if res==False:
@@ -65,7 +74,8 @@ if res==False:
     print "Please install the sources of libev, or provide the path by setting the shell environmental variable C_INCLUDE_PATH"
     sys.exit(1)
 include_dirs.append(res)
-res=find_file('Python.h',search_include_dirs)
+
+res=find_file('Python.h',[distutils.sysconfig.get_python_inc()])
 if res==False:
     print "We don't find 'Python.h' which is a mandatory file to compile Fapws"
     print "Please install the sources of python, or provide the path by setting the shell environmental variable C_INCLUDE_PATH"
