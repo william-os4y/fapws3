@@ -151,7 +151,7 @@ char *time_rfc1123(time_t t)
     strftime(outstr, date_len+1, "---, %d --- %Y %H:%M:%S GMT", tmp); //reformat request by the rfc1123
     memcpy(outstr, days_names[tmp->tm_wday], 3);
     memcpy(outstr+8, month_names[tmp->tm_mon], 3);
-
+    outstr[date_len]='\0';
     return outstr;
 } 
 
