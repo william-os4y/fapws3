@@ -75,7 +75,7 @@ if 1:
   test("azerty", len(content)==os.path.getsize("long.txt"), content)
 
   print "=== Get cached file ==="
-  headers={"if-None-Match":os.path.getmtime('test.html')}
+  headers={"if-None-Match":str(os.path.getmtime('test.html'))}
   con.request("GET", "/staticform", "", headers)
   response=con.getresponse()
   test("304", response.status==304, "304")
