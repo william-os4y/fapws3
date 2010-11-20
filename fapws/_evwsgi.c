@@ -398,7 +398,6 @@ PyObject *py_defer_queue_size(PyObject *self, PyObject *args)
 */
 PyObject *py_rfc1123_date(PyObject *self, PyObject *args)
 {
-    PyObject *pydate;
     time_t t;
     if (!PyArg_ParseTuple(args, "L", &t))
         return NULL;
