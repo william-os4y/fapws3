@@ -11,4 +11,5 @@ char *cur_time(char * fmt);
 
 char *time_rfc1123(time_t t);
 
-char *curtime_rfc1123(time_t t);
+char *cur_time_rfc1123();
+
