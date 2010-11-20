@@ -1,3 +1,7 @@
 include INSTALL
 include LICENSE
 include README.markdown
+include fapws/common.h
+include fapws/extra.h
+include fapws/mainloop.h
+include fapws/wsgi.h
