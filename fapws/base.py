@@ -126,7 +126,6 @@ class Start_response:
         if not self.cookies:
             self.cookies=SimpleCookie()
         self.cookies[key] = value
-        self.response_headers['Set-Cookie'] = self.cookies
         if max_age:
             self.cookies[key]['max-age'] = max_age
         if expires:
