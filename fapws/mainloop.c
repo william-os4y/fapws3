@@ -554,7 +554,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             }
             //free(buff);
         } 
-        else if (PyIter_Check(cli->response_content_obj)) //we treat Iterator object
+        else if ((cli->response_content_obj!=NULL) && (PyIter_Check(cli->response_content_obj))) //we treat Iterator object
         {
             cli->response_iter_sent++;
             PyObject *pyelem = cli->response_content;
@@ -597,8 +597,8 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         } 
         else 
         {
-            printf("wsgi output of is neither a list neither a fileobject\n");
-            //PyErr_SetString(PyExc_TypeError, "Result must be a list or a fileobject");
+            //printf("wsgi output of is neither a list, neither a fileobject, neither an iterable object!!!!!\n");
+            PyErr_SetString(PyExc_TypeError, "Result must be a list, a fileobject or an iterable object");
             stop=1;
         }
     }// end of GET OR POST request
