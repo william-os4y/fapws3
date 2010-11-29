@@ -44,7 +44,7 @@ class Session:
             return data
     def setdata(self, data):
         strdata=pickle.dumps(data)
-        if not self.sessiondb['sessionid']:
+        if not self.sessiondb.get('sessionid', None):
             self.newid()
         self.sessiondb['strdata']=strdata
         self.sessiondb['expiration_date']=self._getdate()
