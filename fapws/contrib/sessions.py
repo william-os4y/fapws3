@@ -25,7 +25,10 @@ class Session:
         self.sessiondb=sessiondb # must have a get method abd return dictionary like object with sessionid, strdata and expiration_date
         self.datetime_fmt=datetime_fmt
     def getdata(self):
-        exp=self.sessiondb['expiration_date']
+        "return the python objected associated or None in case of expiration"
+        exp=self.sessiondb.get('expiration_date',None)
+        if not exp:
+            return None
         if type(exp)==type(datetime.datetime(2011,1,1)):
             expdate=exp
         elif type(exp)==type("string") or type(exp)==type(u"string"):
