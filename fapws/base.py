@@ -169,7 +169,15 @@ supported_HTTP_command=["GET","POST","HEAD","OPTIONS"]
 def split_len(seq, length):
     return [seq[i:i+length] for i in range(0, len(seq), length)]
 
-
+def parse_cookies(environ):
+    #transform the cookie environment into a SimpleCokkie object
+    line=environ.get('HTTP_COOKIE', None)
+    if line:
+        cook=SimpleCookie()
+        cook.load(line)
+        return cook
+    else:
+        return None
 
 if __name__=="__main__":
     try:
