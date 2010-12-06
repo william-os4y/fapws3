@@ -397,6 +397,10 @@ Procedure that will write "len" bytes of "response" to the client.
 */
 int write_cli(struct client *cli, char *response, size_t len,  int revents)
 {
+    /* XXX The design of the function is broken badly: after the first EAGAIN
+       error we should exit and wait for an EV_WRITE event. You can think about
+       slow client or some client which holds a socket but don't read from one.
+     */
     size_t r=0, sent_len=MAX_BUFF;
     int c=0;
     if (revents & EV_WRITE){
@@ -414,13 +418,18 @@ int write_cli(struct client *cli, char *response, size_t len,  int revents)
                 printf("host=%s,port=%i write_cli:uri=%s,r=%i,len=%i,c=%i\n", cli->remote_addr, cli->remote_port, cli->uri, (int)r, (int)len,c);
             if (((int)r<0) & (errno != EAGAIN))
             {
+                if (errno == EPIPE || errno == ECONNRESET) {
+                    // The client closes the socket. We can log the error.
+                    return 0;
+                }
                 cli->retry++;
                 fprintf(stderr,"Failed to write to the client:%s:%i, #:%i.\n", cli->remote_addr, cli->remote_port, cli->retry);
                 if (cli->retry>MAX_RETRY) 
                 {
                     fprintf(stderr, "Connection closed after %i retries\n", cli->retry);
                     return 0; //stop the watcher and close the connection
-                    }
+                }
+                // XXX We shouldn't sleep in an event-base server.
                 usleep(100000);  //failed but we don't want to close the watcher
             }
             if ((int)r==0)
@@ -432,9 +441,9 @@ int write_cli(struct client *cli, char *response, size_t len,  int revents)
                 response+=(int)r;
                 len -=r ;
             }
-         }
-         //p==len
-         return 1;
+        }
+        //p==len
+        return 1;
     }
     else {
         printf("write callback not ended correctly\n");
@@ -554,8 +563,9 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             }
             //free(buff);
         } 
-        else if ((cli->response_content_obj!=NULL) && (PyIter_Check(cli->response_content_obj))) //we treat Iterator object
+        else if ((cli->response_content_obj!=NULL) && (PyIter_Check(cli->response_content_obj))) 
         {
+            //we treat Iterator object
             cli->response_iter_sent++;
             PyObject *pyelem = cli->response_content;
             if (pyelem == NULL) 
