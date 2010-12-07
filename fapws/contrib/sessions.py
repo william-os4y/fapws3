@@ -12,13 +12,14 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import datetime, time
+import binascii
+import datetime
 try:
     import cPickle as pickle
-except:
+except ImportError:
     import pickle
 import os
-import binascii
+import time
 
 
 class Session:

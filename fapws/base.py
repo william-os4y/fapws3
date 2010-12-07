@@ -20,8 +20,9 @@ try:
     import cStringIO as StringIO
 except ImportError:
     import StringIO
-import traceback, sys, string
-
+import sys
+import string
+import traceback
 import time
 
 import config
@@ -190,8 +191,3 @@ def parse_cookies(environ):
         return cook
     else:
         return None
-if __name__=="__main__":
-    try:
-        r=1/0
-    except:
-        print errorMsg()
