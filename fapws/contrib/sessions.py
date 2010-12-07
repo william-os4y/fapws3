@@ -38,9 +38,9 @@ class Session:
         exp = self.sessiondb.get('expiration_date', None)
         if not exp:
             return None
-        if type(exp)==type(datetime.datetime(2011, 1, 1)):
+        if type(exp) is datetime.datetime:
             expdate = exp
-        elif type(exp)==type("string") or type(exp)==type(u"string"):
+        elif type(exp) in (str, unicode):
             expdate = datetime.datetime.fromtimestamp(time.mktime(time.strptime(exp, self.datetime_fmt)))
         else:
             raise ValueError("expiration_Date must be a datetime object or a string (%s)" % self.datetime_fmt)

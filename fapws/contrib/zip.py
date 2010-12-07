@@ -25,7 +25,7 @@ class Gzip:
         def func(environ, start_response):
             content = f(environ, start_response)
             if 'gzip' in environ.get('HTTP_ACCEPT_ENCODING', ''):
-                if type(content)==type([]):
+                if type(content) is list:
                     content = "".join(content)
                 else:
                     #this is a stream

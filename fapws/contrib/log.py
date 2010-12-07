@@ -26,7 +26,7 @@ class Log:
         def func(environ, start_response):
             res = f(environ, start_response)
             tts = time.strftime("%d/%b/%Y:%H:%M:%S", time.gmtime())
-            if type(res)==type([]):
+            if type(res) is list:
                 content = "".join(res)
                 size = len(content)
             elif hasattr(res, "name"):
