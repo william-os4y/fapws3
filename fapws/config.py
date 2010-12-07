@@ -13,7 +13,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 SERVER_IDENT = "fapws3/0.8.1"
-send_traceback_to_browser=True
+send_traceback_to_browser = True
 #in case of False for send_traceback_to_browser, send_traceback_short will be sent to the browser
-send_traceback_short="<h1>Error</h1>Please contact your administrator"
-date_format="%a, %d %b %Y %H:%M:%S GMT"
+send_traceback_short = "<h1>Error</h1>Please contact your administrator"
+date_format = "%a, %d %b %Y %H:%M:%S GMT"
