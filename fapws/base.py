@@ -134,7 +134,7 @@ class Start_response:
             elif isinstance(expires, datetime.datetime):
                 expires = evwsgi.rfc1123_date(time.mktime(expires.timetuple()))
             else:
-                raise CookieError, 'expires must be a datetime object or a string'
+                raise CookieError('expires must be a datetime object or a string')
             self.cookies[key]['expires'] = expires
         if path:
             self.cookies[key]['path'] = path

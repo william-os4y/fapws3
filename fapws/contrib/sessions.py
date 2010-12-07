@@ -40,7 +40,7 @@ class Session:
         elif type(exp)==type("string") or type(exp)==type(u"string"):
             expdate=datetime.datetime.fromtimestamp(time.mktime(time.strptime(exp, self.datetime_fmt))) 
         else:
-            raise ValueError, "expiration_Date must be a datetime object or a string (%s)" % self.datetime_fmt
+            raise ValueError("expiration_Date must be a datetime object or a string (%s)" % self.datetime_fmt)
         if expdate<datetime.datetime.now():
             #expired
             return None
