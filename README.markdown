@@ -66,6 +66,15 @@ Contribution
 People interested to contribute to the development of Fapws3 can contact me on william _dot_ os4y -at- gmail.com
 
 
+The following people sent in patches or made other noteworthy
+contributions.
+
+If I forgot to include you, please shout at me, (it was an accident): 
+
+jerzyk : https://github.com/william-os4y/fapws3/pull/17
+shigin : https://github.com/william-os4y/fapws3/pull/19
+shigin : https://github.com/william-os4y/fapws3/pull/21
+
 License
 -------
 
