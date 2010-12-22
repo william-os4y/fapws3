@@ -91,7 +91,7 @@ library_dirs.append(res)
 
 
 setup(name='fapws3',
-      version="0.8.1",
+      version="0.9",
       description="Fast Asynchronous Python Web Server",
       long_description=readme,
 classifiers=['Development Status :: 4 - Beta','Environment :: Web Environment','License :: OSI Approved :: GNU General Public License (GPL)','Programming Language :: C','Programming Language :: Python','Topic :: Internet :: WWW/HTTP :: HTTP Servers','Topic :: Internet :: WWW/HTTP :: WSGI :: Server'], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
