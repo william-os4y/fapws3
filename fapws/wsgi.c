@@ -449,7 +449,7 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     if (pydummy!=NULL)
     {
         char *ct=PyString_AsString(pydummy);
-        if (strncasecmp(ct, "multipart", 9)!=0) 
+        if (strncasecmp(ct, "application/x-www-form-urlencoded", 33)==0) 
         { 
             pydummy=parse_query(cli->input_body);
             PyDict_SetItemString(pyenviron,"fapws.params",pydummy);
