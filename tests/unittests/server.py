@@ -6,7 +6,7 @@ from fapws import base
 import time
 import sys
 from fapws.contrib import views, zip, log
-
+import mybase
 
 
 def env(environ, start_response):
@@ -53,8 +53,13 @@ def staticshort(environ, start_response):
 
 def testpost(environ, start_response):
     print environ
-    print "INPUT DATA",environ["wsgi.input"].getvalue()
-    return ["OK. params are:%s" % (environ["fapws.params"])]
+    if "multipart/form-data" in environ['HTTP_CONTENT_TYPE']:
+        res=environ["wsgi.input"].getvalue()
+    elif "application/x-www-form-urlencoded" in environ['HTTP_CONTENT_TYPE']:
+        res=environ["fapws.params"]
+    else:
+        res={}
+    return ["OK. params are:%s" % (res)]
 
 @zip.Gzip()    
 def staticlongzipped(environ, start_response):
@@ -74,7 +79,7 @@ def badscript(environ, start_response):
 
 def start():
     evwsgi.start("0.0.0.0", "8080")
-    evwsgi.set_base_module(base)
+    evwsgi.set_base_module(mybase)
     
  
     evwsgi.wsgi_cb(("/env", env))

@@ -3,6 +3,9 @@ import httplib
 import urllib
 import os.path
 
+import pycurl
+import os
+
 successes=0
 failures=0
 
@@ -94,7 +97,29 @@ if 1:
   con.request("POST", "/testpost", params, headers) #in this case httplib send automatically the content-length header
   response=con.getresponse()
   content=response.read()
-  test("OK. params are", response.status==200, content)
+  test("OK. params are:{'var1': ['value1'], 'var2': ['value2']}", response.status==200, content)
+
+  print "=== Post with multipart ==="
+  pf = [('field1', 'this is a test using httppost & stuff'),
+      ('field2', (pycurl.FORM_FILE, 'short.txt'))
+     ]
+
+  response=""
+  def echo(data):
+    global response
+    response+=data
+    
+  fpath='/tmp/short.txt'
+  if os.path.isfile(fpath):
+    os.remove(fpath) #we remove the data stored by the MultipartFormData
+
+  c = pycurl.Curl()
+  c.setopt(c.URL, 'http://127.0.0.1:8080/testpost')
+  c.setopt(c.WRITEFUNCTION, echo)
+  c.setopt(c.HTTPPOST, pf)
+  c.perform()
+  c.close()
+  test("OK. params are:{'field2': ['/tmp/short.txt', {'Content-Type': 'text/plain', 'size': 14L}], 'field1': ['this is a test using httppost & stuff']}", 1==1, response)
 
   print "=== Options ==="
   con.request("OPTIONS", "/")
