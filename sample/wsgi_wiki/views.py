@@ -3,14 +3,14 @@ import string
 import time
 from cgi import parse_qs
 import urllib
+import httplib
 
 from fapws.contrib.headers import redirect
-from fapws.base import status_reasons
 
 repository = "repository"
 menu = """<a href="/index"><img border="0" src="/static/img/house.png" title="Back to home page"/></a>"""
 def get_status(code):
-    return "%s %s" % (code, status_reasons[code])
+    return "%s %s" % (code, httplib.responses[code])
 
 
 
