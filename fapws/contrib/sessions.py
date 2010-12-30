@@ -23,10 +23,11 @@ import time
 
 
 class Session:
-    def __init__(self, sessiondb, max_age=10 * 86400, datetime_fmt="%Y-%m-%d %H:%M:%S"):
+    def __init__(self, sessiondb, max_age=10 * 86400, datetime_fmt="%Y-%m-%d %H:%M:%S", prepare_data=None):
         self.sessiondb = sessiondb  # must have a get method abd return dictionary like object with sessionid, strdata and expiration_date
         self.datetime_fmt = datetime_fmt
         self.max_age = max_age
+        self.prepare_data=prepare_data
         #we should always have a sessionid and an expiration date
         if not self.sessiondb.get('sessionid', None):
             self.newid()
@@ -57,6 +58,8 @@ class Session:
 
     def setdata(self, data):
         strdata = pickle.dumps(data)
+        if self.prepare_data:
+             strdata=self.prepare_data(strdata)
         self.sessiondb['strdata'] = strdata
 
     def newid(self):
