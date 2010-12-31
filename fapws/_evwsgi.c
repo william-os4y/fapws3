@@ -82,7 +82,11 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
     int yes=1;
     int rv;
 
-    PyArg_ParseTuple(args, "ss", &server_name, &server_port);
+    if (!PyArg_ParseTuple(args, "ss", &server_name, &server_port))
+    {
+        fprintf(stderr,"Failed to parse the start parameters. Must be 2 strings.\n");
+        exit(1);
+    }
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
