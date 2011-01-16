@@ -54,7 +54,7 @@ And since 2010 you have the [Fapws website](http://www.fapws.org/)
 
 Where it can run ?
 ------------------
-Theoritically anywhere where both Python (2.4 or above) and Libev are running. 
+Theoritically anywhere where both Python (2.6 or above) and Libev are running.   
 
 It has been reported as running fine on: Freebsd, OpenBSD, NetBsd, Debian (and ubuntu), Gentoo, Archlinux, Fedora.
 
@@ -72,7 +72,9 @@ contributions.
 If I forgot to include you, please shout at me, (it was an accident): 
 
 jerzyk : https://github.com/william-os4y/fapws3/pull/17
+
 shigin : https://github.com/william-os4y/fapws3/pull/19
+
 shigin : https://github.com/william-os4y/fapws3/pull/21
 
 License
