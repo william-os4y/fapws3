@@ -21,13 +21,17 @@ def env(environ, start_response):
 
 def hello(environ, start_response):
     start_response('200 OK', [('Content-Type','text/html')])
-    return ["Hello world!!"]
+    return ["Hello"," world!!"]
 
 def iteration(environ, start_response):
     start_response('200 OK', [('Content-Type','text/plain')])
     yield "Hello"
     yield " "
     yield "world!!"
+
+def tuplehello(environ, start_response):
+    start_response('200 OK', [('Content-Type','text/html')])
+    return ("Hello"," world!!")
 
 @log.Log()
 def staticlong(environ, start_response):
@@ -84,6 +88,7 @@ def start():
  
     evwsgi.wsgi_cb(("/env", env))
     evwsgi.wsgi_cb(("/hello", hello))
+    evwsgi.wsgi_cb(("/tuplehello", tuplehello))
     evwsgi.wsgi_cb(("/iterhello", iteration))
     evwsgi.wsgi_cb(("/longzipped", staticlongzipped))
     evwsgi.wsgi_cb(("/long", staticlong))

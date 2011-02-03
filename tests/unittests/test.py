@@ -57,6 +57,12 @@ if 1:
   content=response.read()
   test("Hello world!!", response.status==200, content)
 
+  print "=== Get tuple Hello world ==="
+  con.request("GET", "/tuplehello")
+  response=con.getresponse()
+  content=response.read()
+  test("Hello world!!", response.status==200, content)
+
   print "=== Get long file ==="
   con.request("GET", "/long")
   response=con.getresponse()
