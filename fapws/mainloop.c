@@ -506,12 +506,13 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     else 
     {
         //we let the python developer to manage other HTTP command
-        if ((PyList_Check(cli->response_content))  && (cli->response_content_obj==NULL)) //we treat list object
+        if (((PyList_Check(cli->response_content))||(PyTuple_Check(cli->response_content)))  && (cli->response_content_obj==NULL)) //we treat list object
         {
+            int tuple = PyTuple_Check(cli->response_content);
             cli->response_iter_sent++;
-            if (cli->response_iter_sent<PyList_Size(cli->response_content)) 
+            if (cli->response_iter_sent<(tuple ? PyTuple_Size(cli->response_content) : PyList_Size(cli->response_content))) 
             {
-                PyObject *pydummy = PyList_GetItem(cli->response_content, cli->response_iter_sent);
+                PyObject *pydummy = tuple ? PyTuple_GetItem(cli->response_content, cli->response_iter_sent) : PyList_GetItem(cli->response_content, cli->response_iter_sent);
                 char *buff;
 #if (PY_VERSION_HEX < 0x02050000)
                 int buflen;
@@ -524,7 +525,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                     // if this is a readable buffer, we send it. Other else, we ignore it.
                     if (write_cli(cli, buff, buflen, revents)==0)
                     {
-                        cli->response_iter_sent=PyList_Size(cli->response_content);  //break the for loop
+                        cli->response_iter_sent = tuple ? PyTuple_Size(cli->response_content) : PyList_Size(cli->response_content);  //break the for loop
                     }
                 }
                 else
