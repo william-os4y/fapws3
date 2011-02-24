@@ -61,10 +61,10 @@ search_library_dirs.extend(['/usr/lib','/usr/local/lib','/opt/local/lib','/usr/l
 search_include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include'])
 
 version=platform.python_version_tuple()
-if int(version[0])==2 and int(version[1])>=6:
-    print "Find python 2.6 or higher"
+if int(version[0])==2 and int(version[1])>=4:
+    print "Find python 2.4 or higher"
 else:
-    print "Fapws has been developped with python 2.6 or higher (not yet python 3.X). Instead we found python %s.%s" % (version[0], version[1])
+    print "Fapws has been developped with python 2.4 or higher (not yet python 3.X). Instead we found python %s.%s" % (version[0], version[1])
     sys.exit(1)
 
 
