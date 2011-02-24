@@ -77,6 +77,8 @@ shigin : https://github.com/william-os4y/fapws3/pull/19
 
 shigin : https://github.com/william-os4y/fapws3/pull/21
 
+Aleskey : did extra tests on python 2.4 and python 2.5
+
 License
 -------
 
