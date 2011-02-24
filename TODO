@@ -1,0 +1,7 @@
+List of imporvements I have in the pipe for Fapws:
+The list is not exhaustive, but more or less sorted from most important to less (to my eyes)
+
+- Better manage POST of big files. They should not be kept in memory before treatment
+- maybe add sample in the Manifest (for Pypi) recursive-include sample *
+- Better documentation
+- be compliant with HTTP1.1
