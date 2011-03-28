@@ -110,7 +110,7 @@ void timer_cb(struct ev_loop *loop, ev_timer *w, int revents)
     {
         ev_timer_stop(loop, w);
     }
-    Py_DECREF(resp);
+    Py_XDECREF(resp);
 }
 
 /*
