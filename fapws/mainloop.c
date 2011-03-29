@@ -765,6 +765,15 @@ void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents)
 }
 
 /*
+This is the sigterm callback registered in the event loop
+*/
+void sigterm_cb(struct ev_loop *loop, ev_signal *w, int revents)
+{
+    ev_unloop(loop, EVUNLOOP_ALL);
+}
+
+
+/*
 This is the sigpipe callback registered in the event loop
 */
 void sigpipe_cb(struct ev_loop *loop, ev_signal *w, int revents)

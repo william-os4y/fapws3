@@ -144,7 +144,7 @@ static PyObject *py_run_loop(PyObject *self, PyObject *args)
     char *backend="";
     int i;
     ev_io accept_watcher;
-    ev_signal signal_watcher, signal_watcher2;
+    ev_signal signal_watcher, signal_watcher2, signal_watcher3;
     struct TimerObj *timer;
     loop = ev_default_loop (0);
     switch (ev_backend(loop))
@@ -169,6 +169,8 @@ static PyObject *py_run_loop(PyObject *self, PyObject *args)
     ev_signal_start(loop, &signal_watcher);
     ev_signal_init(&signal_watcher2, sigpipe_cb, SIGPIPE);
     ev_signal_start(loop, &signal_watcher2);
+    ev_signal_init(&signal_watcher3, sigterm_cb, SIGTERM);
+    ev_signal_start(loop, &signal_watcher3);
     idle_watcher = malloc(sizeof(ev_idle));
     ev_idle_init(idle_watcher, idle_cb);
     if (list_timers_i>=0)
