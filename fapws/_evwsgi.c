@@ -93,13 +93,7 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
     if ((rv = getaddrinfo(server_name, server_port, &hints, &servinfo)) == -1) {
-        char *buf;
-        char *strerror;
-        strerror = gai_strerror(rv);
-        buf = malloc(16 + strlen(strerror));
-        sprintf(buf, "getaddrinfo: %s", strerror);
-        PyErr_SetString(ServerError, buf);
-        free(buf);
+        PyErr_Format(ServerError, "getaddrinfo: %s", gai_strerror(rv));
         return NULL;
     }
 
