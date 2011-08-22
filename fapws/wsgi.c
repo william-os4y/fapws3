@@ -317,8 +317,6 @@ PyObject * header_to_dict (struct client *cli)
          break;
      }
    }
-   data[j]='\0';
-   //printf("BODY:%s***\n",data);
 
    free(data);
    free(buf2);
