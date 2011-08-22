@@ -23,8 +23,54 @@ import time
 
 
 class Session:
+    """
+      This class will manage the session's data for you. Will take into account the expiration date, ... 
+      Data can be any picklable object. 
+      
+      This object must be managed by a SessionMgr acting like this:
+      class SessionMgr:
+          #This sessionMgr is using sessdb with get and save methods.
+	  def __init__(self, environ, start_response):
+	      #we retreive the Session object from our Storage object
+	      self.sessdb=None  
+	      self._sessionid=None
+	      self.start_response=start_response
+	      cook=base.parse_cookies(environ)
+	      if cook and cook.get('sessionid', None):
+		  self._sessionid=cook['sessionid'].value
+		  self.sessdb= ... # you retreive your sessdb dictionary from your Storage object (mysql, sqlite3, ...)
+	      if not self.sessdb:
+		  self.sessdb=... # your create an empty sessdb dictionary 
+	  def get(self, key, default=None):
+	      #To get a element of the data dictionary
+	      sess=Session(self.sessdb)
+	      data=sess.getdata() or {}         #this session manager use dictionary data
+	      return data.get(key, default)
+	  def set(self, key, value):
+	      #to set a key/element in our dictionary
+	      sess=Session(self.sessdb)
+	      data=sess.getdata() or {}         #this session manager use dictionary data
+	      data[key]=value
+	      sess.setdata(data)      #This dumps data in our sess object, thus is our sessdb object
+	      self.sessdb.save()      #If you sessdb object is a Storage object it should have asave method. 
+	  def delete(self, key):
+	      #to delete a key from our dictionary
+	      sess=sessions.Session(self.sessdb)
+	      data=sess.getdata() or {}
+	      if data.has_key(key):
+		  del data[key]
+	      sess.setdata(data)
+	      self.sessdb.save()
+
+    """
     def __init__(self, sessiondb, max_age=10 * 86400, datetime_fmt="%Y-%m-%d %H:%M:%S", prepare_data=None):
-        self.sessiondb = sessiondb  # must have a get method abd return dictionary like object with sessionid, strdata and expiration_date
+        """
+           sessiondb:   this is in fact a record of your sessionDB. This can be an empty record. 
+           max_age:     the session duration. After expiration the associated date will be lost
+           datetime_fmt: the time format are we have in the cookies
+           prepare_date: method required to treat the data. Can be str, ... 
+        """
+        self.sessiondb = sessiondb  # must have a get method and return dictionary like object with sessionid, strdata and expiration_date
         self.datetime_fmt = datetime_fmt
         self.max_age = max_age
         self.prepare_data=prepare_data
@@ -76,3 +122,16 @@ class Session:
         now = datetime.datetime.now()
         exp = now + datetime.timedelta(seconds=self.max_age)
         return exp.strftime(self.datetime_fmt)
+
+
+if __name__ == "__main__":
+    DB={}
+    s=Session(DB, max_age=2) # we store data for 2 seconds
+    s.newid() # we request an ID
+    s.setdata({'test':'fapws values'}) # we set some values
+    print "Our DB:", s.getdata()
+    print "Those values will be stored for 2 seconds"
+    print "now we sleep for 3 seconds"
+    time.sleep(3)
+    print "Our DB:", s.getdata()
+    
