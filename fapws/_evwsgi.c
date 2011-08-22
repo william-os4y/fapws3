@@ -64,6 +64,7 @@ int list_timers_i=0; //number of values entered in the array list_timers
 struct ev_loop *loop; // we define a global loop
 PyObject *pydeferqueue;  //initialisation of defer
 ev_idle *idle_watcher;
+static PyObject *ServerError;
 
 
 
@@ -84,16 +85,22 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
 
     if (!PyArg_ParseTuple(args, "ss", &server_name, &server_port))
     {
-        fprintf(stderr,"Failed to parse the start parameters. Must be 2 strings.\n");
-        exit(1);
+        PyErr_SetString(ServerError, "Failed to parse the start parameters. Must be 2 strings.");
+        return NULL;
     }
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
     if ((rv = getaddrinfo(server_name, server_port, &hints, &servinfo)) == -1) {
-        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
-        exit(1);
+        char *buf;
+        char *strerror;
+        strerror = gai_strerror(rv);
+        buf = malloc(16 + strlen(strerror));
+        sprintf(buf, "getaddrinfo: %s", strerror);
+        PyErr_SetString(ServerError, buf);
+        free(buf);
+        return NULL;
     }
 
     // loop through all the results and bind to the first we can
@@ -107,7 +114,6 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
         if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
                 sizeof(int)) == -1) {
             perror("setsockopt");
-            exit(1);
         }
 
         if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
@@ -119,16 +125,16 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
         break;
     }
 
-    if (p == NULL)  {
-        fprintf(stderr, "server: failed to bind\n");
-        exit(1);
-    }
-
     freeaddrinfo(servinfo); // all done with this structure
 
+    if (p == NULL)  {
+        PyErr_SetString(ServerError, "server: failed to bind");
+        return NULL;
+    }
+
     if (listen(sockfd, BACKLOG) == -1) {
-        perror("listen");
-        exit(1);
+        PyErr_SetString(ServerError, "listen");
+        return NULL;
     }
     printf("listen on %s:%s\n", server_name, server_port);
     return Py_None;
@@ -438,5 +444,10 @@ static PyMethodDef EvhttpMethods[] = {
 PyMODINIT_FUNC
 init_evwsgi(void)
 {
-    (void) Py_InitModule("_evwsgi", EvhttpMethods);
+    PyObject *m;
+    m = Py_InitModule("_evwsgi", EvhttpMethods);
+    
+    ServerError = PyErr_NewException("_evwsgi.error", NULL, NULL);
+    Py_INCREF(ServerError);
+    PyModule_AddObject(m, "error", ServerError);
 }
