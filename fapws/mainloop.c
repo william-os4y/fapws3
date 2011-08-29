@@ -358,13 +358,13 @@ LDEBUG("<< ENTER %p", cli);
     Py_XDECREF(cli->wsgi_cb);
 	if (defer_response == 1) {
 		save_client(cli, pyenviron, pystart_response);
-LDEBUG(">> EXIT %p", cli);
+		LDEBUG(">> EXIT %p", cli);
 		return 2;
 	} else if (cli->response_content!=NULL)
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
         strcpy(cli->response_header,PyString_AsString(pydummy));
-	cli->response_header_length=strlen(cli->response_header);
+		cli->response_header_length=strlen(cli->response_header);
         Py_DECREF(pydummy);
     }
     else 
@@ -377,7 +377,7 @@ LDEBUG(">> EXIT %p", cli);
              LDEBUG("HEADER TOP\n%s\nHEADER BOT", cli->response_header);
              return -1;
         }
-	cli->response_header_length=strlen(cli->response_header);
+		cli->response_header_length=strlen(cli->response_header);
         if (PyErr_Occurred()) 
         { 
              //get_traceback();py_b
@@ -435,14 +435,16 @@ void write_response_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 {
 	struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
 
-LDEBUG("<< ENTER %p", cli);
+LDEBUG("<<<<<<<<<<<<<<<<<<<<<<< ENTER %p", cli);
 
 	write_cli(cli, cli->response_header, cli->response_header_length, revents);
 	cli->response_iter_sent++; //-1: header sent
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
 
+	ev_io_stop(EV_A_ w);
 	ev_io_init(&cli->ev_write,write_cb,cli->fd,EV_WRITE);
 	ev_io_start(loop,&cli->ev_write);
-LDEBUG(">> EXIT %p", cli);
+LDEBUG(">>>>>>>>>>>>>>>>>>>>>>>> EXIT %p", cli);
 }
 
 /*
@@ -497,10 +499,12 @@ LDEBUG("<< ENTER %p (%i)", cli, len);
             }
         }
         //p==len
+LDEBUG("<< EXIT %p = %i", cli, 1);
         return 1;
     }
     else {
         LERROR("write callback not ended correctly");
+LDEBUG("<< EXIT %p = %i", cli, 0);
         return 0; //stop the watcher and close the connection
     }
 
@@ -515,7 +519,8 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     int stop=0; //0: not stop, 1: stop, 2: stop and call tp close
     int ret; //python_handler return
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
-LDEBUG("<< ENTER %p", cli);
+LDEBUG("<< ENTER %p", cli, cli->response_iter_sent);
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
     if (cli->response_iter_sent==-2)
     { 
         //we must send an header or an error
@@ -547,18 +552,19 @@ LDEBUG("<< ENTER %p", cli);
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
-			else if (ret==2)
-			{
-				//dont want to send response right now.
-				//save environ and start_response to later send
-				stop=0;
-				ev_io_stop(EV_A_ w);
-			}
+		else if (ret==2)
+		{
+			//dont want to send response right now.
+			//save environ and start_response to later send
+			stop=0;
+			ev_io_stop(EV_A_ w);
+		}
         else
         {
             //uri found, we thus send the html header 
             write_cli(cli, cli->response_header, cli->response_header_length, revents);
             cli->response_iter_sent++; //-1: header sent
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
         }
     } 
     else if (strcmp(cli->cmd,"HEAD")==0)
@@ -572,9 +578,11 @@ LDEBUG("<< ENTER %p", cli);
         //we let the python developer to manage other HTTP command
         if (((PyList_Check(cli->response_content))||(PyTuple_Check(cli->response_content)))  && (cli->response_content_obj==NULL)) //we treat list object
         {
-				LDEBUG("is list");
+				LDEBUG("is list %i", PyList_Size(cli->response_content));
             int tuple = PyTuple_Check(cli->response_content);
             cli->response_iter_sent++;
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
+            LDEBUG("iter_sent=%i", cli->response_iter_sent);
             if (cli->response_iter_sent<(tuple ? PyTuple_Size(cli->response_content) : PyList_Size(cli->response_content))) 
             {
 				LDEBUG("will send");
@@ -592,6 +600,7 @@ LDEBUG("<< ENTER %p", cli);
                     if (write_cli(cli, buff, buflen, revents)==0)
                     {
                         cli->response_iter_sent = tuple ? PyTuple_Size(cli->response_content) : PyList_Size(cli->response_content);  //break the for loop
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
                     }
                 }
                 else
@@ -612,6 +621,7 @@ LDEBUG("<< ENTER %p", cli);
                 cli->response_fp=PyFile_AsFile(cli->response_content);
             }
             cli->response_iter_sent++;
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
             char buff[MAX_BUFF]="";  
             size_t len=fread(buff, sizeof(char), MAX_BUFF, cli->response_fp);
             if ((int)len==0)
@@ -637,6 +647,7 @@ LDEBUG("<< ENTER %p", cli);
 				LDEBUG("is iter");
             //we treat Iterator object
             cli->response_iter_sent++;
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
             PyObject *pyelem = cli->response_content;
             if (pyelem == NULL) 
             {
@@ -824,6 +835,7 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->input_pos=0;
     cli->retry=0;
     cli->response_iter_sent=-2;
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
     cli->remote_addr=inet_ntoa (client_addr.sin_addr);
     cli->remote_port=ntohs(client_addr.sin_port);
     if (setnonblock(cli->fd) < 0)

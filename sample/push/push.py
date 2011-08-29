@@ -28,14 +28,17 @@ def start(no, shared):
 		return True
 
 	def on_post(environ, start_response):
-		message = 'xalala' #environ['XXX']
-		for client in queue:
+		message = 'xalala\n' #environ['XXX']
+		print 'python: queue=%i' % len(queue)
+		for client in globals()['queue']:
 			print 'python: on_post', client
 			client.start_response('200 OK', [('Content-Type','text/plain')])
-			evwsgi.write_response(client.environ, client.start_response, [ message ])
+			evwsgi.write_response(client.environ, client.start_response, [message])
+#			queue.remove(client)
 		start_response('200 OK', [('Content-Type','text/html')])
 		print 'python: on_post end'
-		return ['<hello>']
+		globals()['queue'] = list()
+		return ['<hello>\n']
 
 	evwsgi.wsgi_cb(('/get', on_get))
 	evwsgi.wsgi_cb(('/post', on_post))

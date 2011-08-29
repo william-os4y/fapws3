@@ -427,6 +427,9 @@ PyObject *py_write_response(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
+	PyObject *o = PyList_GetItem(pymessage, 0);
+	LDEBUG("py_write_response mesg: %s", PyString_AsString(o));
+
 	PyObject *pydummy = PyObject_Str(pystart_response);
 	strcpy(cli->response_header,PyString_AsString(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
