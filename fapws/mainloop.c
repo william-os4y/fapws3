@@ -185,7 +185,35 @@ int handle_uri(struct client *cli)
     return 0;
 }
 
+struct
+{
+	struct client *cli;
+	PyObject *pyenviron;
+	PyObject *pystart_response;
+} saveclient[100];
 
+int saved = 0;
+void save_client(struct client *cli, PyObject *pyenviron, PyObject* pystart_response)
+{
+	saveclient[saved].cli = cli;
+	saveclient[saved].pyenviron = pyenviron;
+	saveclient[saved].pystart_response = pystart_response;
+	printf("saved %i %p/%p/%p\n", saved, cli, pyenviron, pystart_response);
+	++saved;
+}
+
+struct client* get_client(PyObject *pyenviron, PyObject* pystart_response)
+{
+	int i;
+	for (i = 0; i < saved; ++i) {
+		if (saveclient[i].pyenviron == pyenviron) {
+			if (saveclient[i].pystart_response == pystart_response) {
+				return saveclient[i].cli;
+			}
+		}
+	}
+	return NULL;
+}
 
 /*
 This is the main python handler that will transform and treat the client html request. 
@@ -312,17 +340,23 @@ int python_handler(struct client *cli)
     // 8) execute python callbacks with his parameters
     PyObject *pyarglist = Py_BuildValue("(OO)", pyenviron, pystart_response );
     cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
+	int defer_response = 0;
     if (cli->response_content!=NULL) 
     {
         if ((PyFile_Check(cli->response_content)==0) && (PyIter_Check(cli->response_content)==1)) {
             //This is an Iterator object. We have to execute it first
             cli->response_content_obj = cli->response_content;
             cli->response_content = PyIter_Next(cli->response_content_obj);
-        }
+			} else if (PyBool_Check(cli->response_content) == 1 && Py_True == cli->response_content) {
+				defer_response = 1;
+			}
     }
     Py_DECREF(pyarglist);
     Py_XDECREF(cli->wsgi_cb);
-    if (cli->response_content!=NULL) 
+	if (defer_response == 1) {
+		save_client(cli, pyenviron, pystart_response);
+		return 2;
+	} else if (cli->response_content!=NULL)
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
         strcpy(cli->response_header,PyString_AsString(pydummy));
@@ -392,11 +426,26 @@ int python_handler(struct client *cli)
     return 1;
 }
 
+void write_response_cb(struct ev_loop *loop, struct ev_io *w, int revents)
+{
+	struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
+
+	printf("write_response_cb %p\n", cli);
+
+	write_cli(cli, cli->response_header, cli->response_header_length, revents);
+	cli->response_iter_sent++; //-1: header sent
+//	ev_io_stop(EV_A_ w);
+//	close_connection(cli);
+	ev_io_init(&cli->ev_write,write_cb,cli->fd,EV_WRITE);
+	ev_io_start(loop,&cli->ev_write);
+}
+
 /*
 Procedure that will write "len" bytes of "response" to the client.
 */
 int write_cli(struct client *cli, char *response, size_t len,  int revents)
 {
+printf("write_cli %p %ib\n", cli, len);
     /* XXX The design of the function is broken badly: after the first EAGAIN
        error we should exit and wait for an EV_WRITE event. You can think about
        slow client or some client which holds a socket but don't read from one.
@@ -461,11 +510,12 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     int stop=0; //0: not stop, 1: stop, 2: stop and call tp close
     int ret; //python_handler return
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
+printf("write_cb: %p\n", cli);
     if (cli->response_iter_sent==-2)
     { 
         //we must send an header or an error
         ret=python_handler(cli); //look for python callback and execute it
-        if (ret==0) //look for python callback and execute it
+        if (ret==0)
         {
             //uri not found
             str_append3(response,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ", VERSION ,"\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>", MAXHEADER);
@@ -491,6 +541,13 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
+			else if (ret==2)
+			{
+				//dont want to send response right now.
+				//save environ and start_response to later send
+				stop=0;
+				ev_io_stop(EV_A_ w);
+			}
         else
         {
             //uri found, we thus send the html header 
@@ -505,13 +562,16 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     }
     else 
     {
+			printf("send body %p/%p\n", cli, cli->response_content);
         //we let the python developer to manage other HTTP command
         if (((PyList_Check(cli->response_content))||(PyTuple_Check(cli->response_content)))  && (cli->response_content_obj==NULL)) //we treat list object
         {
+				printf("is list");
             int tuple = PyTuple_Check(cli->response_content);
             cli->response_iter_sent++;
             if (cli->response_iter_sent<(tuple ? PyTuple_Size(cli->response_content) : PyList_Size(cli->response_content))) 
             {
+				printf("will send\n");
                 PyObject *pydummy = tuple ? PyTuple_GetItem(cli->response_content, cli->response_iter_sent) : PyList_GetItem(cli->response_content, cli->response_iter_sent);
                 char *buff;
 #if (PY_VERSION_HEX < 0x02050000)
@@ -531,7 +591,8 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 else
                 {
                     printf("The item %i of your list is not a string!!!!  It will be skipped\n",cli->response_iter_sent);
-                }            }
+                }
+            }
             else // all iterations has been sent
             {
                 stop=2;
@@ -539,6 +600,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         } 
         else if (PyFile_Check(cli->response_content) && (cli->response_content_obj==NULL)) // we treat file object
         {
+				printf("is file");
             if (cli->response_iter_sent==-1) // we need to initialise the file descriptor
             {
                 cli->response_fp=PyFile_AsFile(cli->response_content);
@@ -566,6 +628,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         } 
         else if ((cli->response_content_obj!=NULL) && (PyIter_Check(cli->response_content_obj))) 
         {
+				printf("is iter");
             //we treat Iterator object
             cli->response_iter_sent++;
             PyObject *pyelem = cli->response_content;
@@ -608,10 +671,12 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         } 
         else 
         {
+				printf("is nothing");
             //printf("wsgi output of is neither a list, neither a fileobject, neither an iterable object!!!!!\n");
             PyErr_SetString(PyExc_TypeError, "Result must be a list, a fileobject or an iterable object");
             stop=1;
         }
+			printf("\n");
     }// end of GET OR POST request
     if (stop==2)
     {
@@ -639,6 +704,7 @@ The procedure is the connection callback registered in the event loop
 void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 { 
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_read)));
+printf("new cli %p\n", cli);
     size_t r=0;
     char rbuff[MAX_BUFF]="";
     int read_finished=0;
