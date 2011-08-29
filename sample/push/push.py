@@ -9,29 +9,32 @@ class Client:
 	def __init__(self, environ, start_response):
 		self.environ = environ
 		self.start_response = start_response
+		print '__init__', self
 
 queue = list()
 
 def start(no, shared):
 	print 'child[%i]: %i' % (no, posh.getpid())
 
-	def on_interrupt(signum, frame):
-		print 'Child %i received SIGINT. Exiting...' % no
-		posh.exit(0)
-	signal.signal(signal.SIGINT, on_interrupt)
+	#def on_interrupt(signum, frame):
+	#	print 'Child %i received SIGINT. Exiting...' % no
+	#	posh.exit(0)
+	#signal.signal(signal.SIGINT, on_interrupt)
 
 	def on_get(environ, start_response):
-		print 'new client'
-		queue.append(Client(environ, start_response))
+		client = Client(environ, start_response)
+		print 'python: on_get', client
+		queue.append(client)
 		return True
 
 	def on_post(environ, start_response):
-		print 'got message'
 		message = 'xalala' #environ['XXX']
 		for client in queue:
+			print 'python: on_post', client
 			client.start_response('200 OK', [('Content-Type','text/plain')])
 			evwsgi.write_response(client.environ, client.start_response, [ message ])
 		start_response('200 OK', [('Content-Type','text/html')])
+		print 'python: on_post end'
 		return ['<hello>']
 
 	evwsgi.wsgi_cb(('/get', on_get))
