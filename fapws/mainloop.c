@@ -197,6 +197,12 @@ struct
 	PyObject *pystart_response;
 } saveclient[100000];
 
+static struct client* _current_client = NULL;
+struct client* current_client()
+{
+	return _current_client;
+}
+
 int saved = 0;
 void save_client(struct client *cli, PyObject *pyenviron, PyObject* pystart_response)
 {
@@ -526,9 +532,11 @@ LDEBUG("<< ENTER %p", cli, cli->response_iter_sent);
 LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
     if (cli->response_iter_sent==-2)
     { 
+		_current_client = cli;
         //we must send an header or an error
         ret=python_handler(cli); //look for python callback and execute it
-			LDEBUG("python returned: %i", ret);
+		_current_client = NULL;
+		LDEBUG("python returned: %i", ret);
         if (ret==0)
         {
             //uri not found

@@ -423,7 +423,10 @@ PyObject *py_write_response(PyObject *self, PyObject *args)
 
 	struct client *cli = get_client(pyenviron, pystart_response);
 	if (!cli) {
-		return NULL;
+		Py_INCREF(pyenviron);
+		Py_INCREF(pystart_response);
+		cli = current_client();
+		save_client(cli, pyenviron, pystart_response);
 	}
 	LDEBUG("py_write_response %p", cli);
 

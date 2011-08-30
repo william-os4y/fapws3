@@ -27,4 +27,8 @@ void sigterm_cb(struct ev_loop *loop, ev_signal *w, int revents);
 
 void sigpipe_cb(struct ev_loop *loop, ev_signal *w, int revents);
 
+void save_client(struct client *cli, PyObject *pyenviron, PyObject* pystart_response);
+
 struct client* get_client(PyObject *pyenviron, PyObject* pystart_response);
+
+struct client* current_client();
