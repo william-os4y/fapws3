@@ -415,6 +415,31 @@ PyObject *py_rfc1123_date(PyObject *self, PyObject *args)
     return result;
 }
 
+PyObject *py_write_response(PyObject *self, PyObject *args)
+{
+	PyObject *pyenviron, *pystart_response, *pymessage;
+	if (!PyArg_ParseTuple(args, "OOO", &pyenviron, &pystart_response, &pymessage))
+		return NULL;
+
+	struct client *cli = get_client(pyenviron, pystart_response);
+	LDEBUG("py_write_response %p", cli);
+	if (!cli) {
+		return NULL;
+	}
+
+	PyObject *o = PyList_GetItem(pymessage, 0);
+	LDEBUG("py_write_response mesg: %s", PyString_AsString(o));
+
+	PyObject *pydummy = PyObject_Str(pystart_response);
+	strcpy(cli->response_header,PyString_AsString(pydummy));
+	cli->response_header_length=strlen(cli->response_header);
+	Py_DECREF(pydummy);
+	Py_INCREF(pymessage);
+	cli->response_content = pymessage;
+	ev_io_init(&cli->ev_write,write_response_cb,cli->fd,EV_WRITE);
+	ev_io_start(loop,&cli->ev_write);
+	return Py_None;
+}
 
 static PyMethodDef EvhttpMethods[] = {
     {"start", py_ev_start, METH_VARARGS, "Define evhttp sockets"},
@@ -432,6 +457,7 @@ static PyMethodDef EvhttpMethods[] = {
     {"defer", py_defer, METH_VARARGS, "defer the execution of a python function."},
     {"defer_queue_size", py_defer_queue_size, METH_VARARGS, "Get the size of the defer queue"},
     {"rfc1123_date", py_rfc1123_date, METH_VARARGS, "trasnform a time (in sec) into a string compatible with the rfc1123"},
+    {"write_response", py_write_response, METH_VARARGS, ""},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 

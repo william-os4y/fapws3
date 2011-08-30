@@ -1,3 +1,6 @@
+#ifndef FAPWS3_COMMON_H
+#define FAPWS3_COMMON_H
+
 #include <ev.h>
 #include <Python.h>
 
@@ -38,3 +41,4 @@ struct TimerObj {
 };
 
 
+#endif //FAPWS3_COMMON_H
