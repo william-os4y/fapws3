@@ -187,12 +187,16 @@ int handle_uri(struct client *cli)
     return 0;
 }
 
+/*
+	TODO: Clearly we need a fast rbtree to store clients.
+	Also it whould be better to store in a known struct and expose it to python as a class.
+*/
 struct
 {
 	struct client *cli;
 	PyObject *pyenviron;
 	PyObject *pystart_response;
-} saveclient[100];
+} saveclient[100000];
 
 int saved = 0;
 void save_client(struct client *cli, PyObject *pyenviron, PyObject* pystart_response)
@@ -352,6 +356,8 @@ LDEBUG("<< ENTER %p", cli);
             cli->response_content = PyIter_Next(cli->response_content_obj);
 			} else if (PyBool_Check(cli->response_content) == 1 && Py_True == cli->response_content) {
 				defer_response = 1;
+				Py_DECREF(cli->response_content);
+				cli->response_content = NULL;
 			}
     }
     Py_DECREF(pyarglist);
@@ -578,7 +584,7 @@ LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
         //we let the python developer to manage other HTTP command
         if (((PyList_Check(cli->response_content))||(PyTuple_Check(cli->response_content)))  && (cli->response_content_obj==NULL)) //we treat list object
         {
-				LDEBUG("is list %i", PyList_Size(cli->response_content));
+				LDEBUG("list size=%i", PyList_Size(cli->response_content));
             int tuple = PyTuple_Check(cli->response_content);
             cli->response_iter_sent++;
 LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);

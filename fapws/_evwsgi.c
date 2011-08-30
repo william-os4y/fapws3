@@ -434,6 +434,7 @@ PyObject *py_write_response(PyObject *self, PyObject *args)
 	strcpy(cli->response_header,PyString_AsString(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
 	Py_DECREF(pydummy);
+	Py_INCREF(pymessage);
 	cli->response_content = pymessage;
 	ev_io_init(&cli->ev_write,write_response_cb,cli->fd,EV_WRITE);
 	ev_io_start(loop,&cli->ev_write);
