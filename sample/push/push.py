@@ -39,7 +39,7 @@ def start(no=0, shared=None):
 		return True
 
 	def on_post(environ, start_response):
-		message = 'xalala\n' #environ['XXX']
+		message = 'Hello from %s:%s!\n' % (environ['fapws.remote_addr'], environ['fapws.remote_port'])
 #		print 'python: queue=%i' % len(queue)
 		# for each client we saved in on_get(), we schedule a write with anything
 		# we want to send them.
