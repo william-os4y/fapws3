@@ -198,7 +198,7 @@ void log_debug(unsigned int prio, const char* file, const char* func, int line, 
 	vsnprintf(mesg, sizeof(mesg), fmt, va);
 	va_end(va);
 
-	const *fp = stderr; //future will log to file/syslog/whatever
+	FILE* fp = stderr; //future will log to file/syslog/whatever
 	const char *prio_name = priority_name(prio) ? : "";
 	const int ret = fprintf(fp, "%s: %s:%s:%i %s", prio_name, file, func, line, mesg);
 	if (ret > 0 && mesg[ret] != '\n')

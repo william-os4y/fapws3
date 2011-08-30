@@ -45,10 +45,10 @@
 /*
 Somme  global variables
 */
+int debug=1; //1 full debug detail: 0 nodebug
 char *server_name="127.0.0.1";
 char *server_port="8000";
 int sockfd;  // main sock_fd
-int debug=0; //1 full debug detail: 0 nodebug
 char *VERSION;
 #define BACKLOG 1024     // how many pending connections queue will hold
 char *date_format;
@@ -375,7 +375,7 @@ PyObject *py_defer(PyObject *self, PyObject *args)
         if (startidle==1)
         {
             //we create a new idle watcher and we start it
-            if (debug) printf("trigger idle_start \n");
+            LDEBUG("trigger idle_start");
             ev_idle_start(loop, idle_watcher);
         }
     }
@@ -422,10 +422,10 @@ PyObject *py_write_response(PyObject *self, PyObject *args)
 		return NULL;
 
 	struct client *cli = get_client(pyenviron, pystart_response);
-	LDEBUG("py_write_response %p", cli);
 	if (!cli) {
 		return NULL;
 	}
+	LDEBUG("py_write_response %p", cli);
 
 	PyObject *o = PyList_GetItem(pymessage, 0);
 	LDEBUG("py_write_response mesg: %s", PyString_AsString(o));
