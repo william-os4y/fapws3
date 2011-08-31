@@ -63,6 +63,56 @@ class Message:
 		return self.content
 
 #######################################################
+# MessageStream is a helper to organize messages from a
+# Channel. Every new message has an index (mid) and a value.
+# If new mid is greater than last mid, all positions up
+# to mid are filled with None,  i.e. a MessageStream
+# always has a number of elements equals to the mid of
+# the greatest message, even if that is the only valid
+# message stred.
+# This makes easy to find "holes" in the stream. Dict()s
+# are not order safe.
+#######################################################
+class MessageStream(list):
+	def insert(self, message):
+		if message.mid == len(self):
+			# this is the next message
+			self.append(message)
+		elif message.mid < len(self):
+			#overwrite existing position
+			self[message.mid] = message
+		else:
+			# message is way too far from last message. fill with None and append
+			self.extend([ None for x in range(message.mid - len(self)) ])
+			self.append(message)
+
+		#print '+ MessageStream: %s' % self
+
+	def has(self, mid):
+		return mid < len(self) # and self[mid] != None
+
+	def range(self, start, count=-1):
+		'''returns all messages from start up to fist "hole".
+		Ex: given message [0, 1, 2, 3, 4, None, 6]
+			range(1)    -> [1, 2, 3, 4]
+			range(1, 3) -> [1, 2, 3]
+		'''
+		return [ x for x in takewhile(lambda x: x != None, self[start:start+count]) ]
+
+	## some silly precautions
+	def pop(self, *vargs):
+		raise NotImplementedError('MessageStream is inmutable')
+
+	def remove(self, *vargs):
+		raise NotImplementedError('MessageStream is inmutable')
+
+	def sort(self, *vargs):
+		raise NotImplementedError('MessageStream is inmutable')
+
+	def reverse(self, *vargs):
+		raise NotImplementedError('MessageStream is inmutable')
+
+#######################################################
 # Client is a single HTTP client. Every client receives
 # a single message and is disconnected
 #######################################################
@@ -77,30 +127,20 @@ class Client:
 #######################################################
 class Channel:
 	def __init__(self, name):
-		self.last = None
 		self.name = name
 		self.subs = dict() # Subscribers for this channel
-		self.mesgs = dict() # message posted on this channel
+		self.stream = MessageStream()
 		print '+ Channel %s' % self
 
-	def get_message(self, mid=None):
+	def get_message(self, mid):
 		print 'Channel> get_message %s' % mid
-#		try:
-		if self.mesgs.has_key(mid):
-			print 1
-			return self.mesgs[mid]
-		elif self.last > mid:
-			print self.last > mid
-			print 2
-			raise HttpStatus(204)
-		elif mid == None and self.last:
-			print 3
-			return self.mesgs[self.last]
+		if self.stream.has(mid):
+			m = self.stream[mid]
+			if m == None:
+				raise HttpStatus(204)
+			return self.stream[mid]
 		else:
-			print 4
 			return None
-#		except KeyError:
-#			return None
 
 	def subscribe(self, client):
 		print 'Channel> subscribe %s' % client
@@ -117,10 +157,8 @@ class Channel:
 		evwsgi.write_response(client.environ, client.start_response, [http_error.status])
 
 	def publish(self, message):
-		# save for future requests
-		self.mesgs[message.mid] = message
-		self.last = message.mid
 		print 'Channel> publish %s' % message.mid
+		self.stream.insert(message)
 
 		# broadcast to subscribers
 		for n, client in self.subs.items():
@@ -131,8 +169,7 @@ class Channel:
 
 		# unregister subscribers
 		total = len(self.subs)
-		del self.subs
-		self.subs = dict();
+		self.subs.clear()
 		return total
 
 #######################################################
@@ -290,11 +327,11 @@ def start(no=0, shared=None):
 			return ['invalid parameter: %s' % ex]
 
 		# for each subscriber we saved in on_get(), schedule a write.
-		ch.publish(mesg)
+		subs_count = ch.publish(mesg)
 
 		# response to publisher
 		start_response('200 OK', [('Content-Type','text/plain')])
-		return ['queued messages: %i\nlast requested: %i sec. ago (-1=never)\nactive subscribers: %i\n' % (1, -1, len(ch.subs)) ] #TODO
+		return ['queued messages: %i\nlast requested: %i sec. ago (-1=never)\nactive subscribers: %i\n' % (1, -1, subs_count) ] #TODO
 
 	evwsgi.wsgi_cb(('/broadcast/sub', subscribe))
 	evwsgi.wsgi_cb(('/broadcast/pub', publish))
