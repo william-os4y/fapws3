@@ -9,9 +9,9 @@
 #include "common.h"
 #include "wsgi.h"
 
+extern int debug;
 char *server_name;
 char *server_port;
-int debug;
 
 /*
 This procdure analyse uri and return a Python dictionary with every parameters as keys and their associated values into a list. 
@@ -409,10 +409,8 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_LENGTH");
     if (pydummy==NULL) {
         //a POST without content-length is not a valid 
-        if (debug) {
-            printf("We cannot manage a POST without Content-Length\n");
-            printf("Associated header:\n%s\n",cli->input_header);
-        }
+        LDEBUG("We cannot manage a POST without Content-Length\n");
+        LDEBUG("Associated header:\n%s\n",cli->input_header);
         return -411;
     }
     char *content_length_str = PyString_AsString(pydummy);

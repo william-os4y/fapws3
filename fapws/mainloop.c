@@ -23,7 +23,6 @@
 #include "wsgi.h"
 #include "mainloop.h"
 
-int debug;
 PyObject *pydeferqueue; 
 PyObject *py_base_module;  //to store the fapws.base python module
 PyObject *py_config_module; //to store the fapws.config module
@@ -31,6 +30,7 @@ PyObject *py_registered_uri; //list containing the uri registered and their asso
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 9   //number of connection retry
 
+extern int debug;
 char * VERSION;
 PyObject *py_generic_cb; 
 char * date_format;
@@ -74,8 +74,7 @@ We just free all the required variables and then close the connection to the cli
 void close_connection(struct client *cli)
 {
 LDEBUG("<< ENTER %p", cli);
-    if (debug)
-        LDEBUG("host=%s,port=%i close_connection:cli:%p, input_header:%p***",cli->remote_addr, cli->remote_port, cli, cli->input_header);
+    LDEBUG("host=%s,port=%i close_connection:cli:%p, input_header:%p***",cli->remote_addr, cli->remote_port, cli, cli->input_header);
     free(cli->input_header);
     free(cli->cmd);
     free(cli->uri);
@@ -129,7 +128,7 @@ void idle_cb(struct ev_loop *loop, ev_idle *w, int revents)
         PyObject *pyfct=PySequence_GetItem(pyelem,0);
         PyObject *pyfctargs=PySequence_GetItem(pyelem,1);
         //execute the python code
-        if (debug) LDEBUG("Execute 1 python function in defer mode:%i", listsize);
+        LDEBUG("Execute 1 python function in defer mode:%i", listsize);
         PyObject *response = PyObject_CallFunctionObjArgs(pyfct, pyfctargs, NULL); 
         if (response==NULL) 
         {
@@ -146,7 +145,7 @@ void idle_cb(struct ev_loop *loop, ev_idle *w, int revents)
     } else
     {
         //stop idle if queue is empty
-        if (debug) LDEBUG("stop ev_idle");
+        LDEBUG("stop ev_idle");
         ev_idle_stop(loop, w);
         Py_DECREF(pydeferqueue);
         pydeferqueue=NULL;
@@ -198,6 +197,12 @@ struct
 	PyObject *pystart_response;
 } saveclient[100000];
 
+static struct client* _current_client = NULL;
+struct client* current_client()
+{
+	return _current_client;
+}
+
 int saved = 0;
 void save_client(struct client *cli, PyObject *pyenviron, PyObject* pystart_response)
 {
@@ -234,8 +239,7 @@ LDEBUG("<< ENTER %p", cli);
     PyObject *pydict, *pydummy;
     int ret;
 
-    if (debug)
-         LDEBUG("host=%s,port=%i:python_handler:HEADER:\n%s**", cli->remote_addr, cli->remote_port, cli->input_header);
+    LDEBUG("host=%s,port=%i:python_handler:HEADER:\n%s**", cli->remote_addr, cli->remote_port, cli->input_header);
     //  1)initialise environ
     PyObject *pyenviron_class=PyObject_GetAttrString(py_base_module, "Environ");
     if (!pyenviron_class)
@@ -476,8 +480,7 @@ LDEBUG("<< ENTER %p (%i)", cli, len);
             }
             r=write(cli->fd,response ,sent_len);
             c++;
-            if (debug)
-                LDEBUG("host=%s,port=%i write_cli:uri=%s,r=%i,len=%i,c=%i", cli->remote_addr, cli->remote_port, cli->uri, (int)r, (int)len,c);
+            LDEBUG("host=%s,port=%i write_cli:uri=%s,r=%i,len=%i,c=%i", cli->remote_addr, cli->remote_port, cli->uri, (int)r, (int)len,c);
             if (((int)r<0) & (errno != EAGAIN))
             {
                 if (errno == EPIPE || errno == ECONNRESET) {
@@ -529,9 +532,11 @@ LDEBUG("<< ENTER %p", cli, cli->response_iter_sent);
 LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
     if (cli->response_iter_sent==-2)
     { 
+		_current_client = cli;
         //we must send an header or an error
         ret=python_handler(cli); //look for python callback and execute it
-			LDEBUG("python returned: %i", ret);
+		_current_client = NULL;
+		LDEBUG("python returned: %i", ret);
         if (ret==0)
         {
             //uri not found
@@ -684,10 +689,7 @@ LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
                 cli->response_content = PyIter_Next(cli->response_content_obj);
                 if (cli->response_content==NULL)
                 {
-                     if (debug)
-                     {
-                         LDEBUG("host=%s,port=%i iterator ended uri=%s", cli->remote_addr, cli->remote_port, cli->uri );
-                     }
+                     LDEBUG("host=%s,port=%i iterator ended uri=%s", cli->remote_addr, cli->remote_port, cli->uri );
                      stop=2;
                 }
             }    
@@ -760,8 +762,7 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             memcpy(cli->input_header + cli->input_pos, rbuff, r); 
             cli->input_pos += r; 
             cli->input_header[cli->input_pos]='\0';
-            if (debug)
-                LDEBUG("host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
+            LDEBUG("host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
             // if \r\n\r\n then end of header   
             
             cli->input_body=strstr(cli->input_header, "\r\n\r\n"); //use memmem ???
@@ -836,8 +837,7 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->response_header[0]='\0';
     cli->response_content=NULL;
     cli->response_content_obj=NULL;
-    if (debug)
-        LDEBUG("host:%s,port:%i accept_cb: cli:%p, input_header:%p", inet_ntoa (client_addr.sin_addr),ntohs(client_addr.sin_port), cli, cli->input_header);
+    LDEBUG("host:%s,port:%i accept_cb: cli:%p, input_header:%p", inet_ntoa (client_addr.sin_addr),ntohs(client_addr.sin_port), cli, cli->input_header);
     cli->input_pos=0;
     cli->retry=0;
     cli->response_iter_sent=-2;
