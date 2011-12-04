@@ -23,7 +23,6 @@
 #include "wsgi.h"
 #include "mainloop.h"
 
-int debug;
 PyObject *pydeferqueue; 
 PyObject *py_base_module;  //to store the fapws.base python module
 PyObject *py_config_module; //to store the fapws.config module
@@ -31,6 +30,7 @@ PyObject *py_registered_uri; //list containing the uri registered and their asso
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 9   //number of connection retry
 
+extern int debug;
 char * VERSION;
 PyObject *py_generic_cb; 
 char * date_format;
@@ -73,8 +73,8 @@ We just free all the required variables and then close the connection to the cli
 */
 void close_connection(struct client *cli)
 {
-    if (debug)
-        printf("host=%s,port=%i close_connection:cli:%p, input_header:%p***\n",cli->remote_addr, cli->remote_port, cli, cli->input_header);
+LDEBUG("<< ENTER %p", cli);
+    LDEBUG("host=%s,port=%i close_connection:cli:%p, input_header:%p***",cli->remote_addr, cli->remote_port, cli, cli->input_header);
     free(cli->input_header);
     free(cli->cmd);
     free(cli->uri);
@@ -89,6 +89,7 @@ void close_connection(struct client *cli)
     }
     close(cli->fd);
     free(cli);
+LDEBUG(">> EXIT");
 }
 
 
@@ -127,11 +128,11 @@ void idle_cb(struct ev_loop *loop, ev_idle *w, int revents)
         PyObject *pyfct=PySequence_GetItem(pyelem,0);
         PyObject *pyfctargs=PySequence_GetItem(pyelem,1);
         //execute the python code
-        if (debug) printf("Execute 1 python function in defer mode:%i\n", listsize);
+        LDEBUG("Execute 1 python function in defer mode:%i", listsize);
         PyObject *response = PyObject_CallFunctionObjArgs(pyfct, pyfctargs, NULL); 
         if (response==NULL) 
         {
-            printf("ERROR!!!! Defer callback function as a problem. \nI remind that it takes always one argumet\n");
+            LDEBUG("ERROR!!!! Defer callback function as a problem. \nI remind that it takes always one argumet");
             PyErr_Print();
             //exit(1);
         }
@@ -144,7 +145,7 @@ void idle_cb(struct ev_loop *loop, ev_idle *w, int revents)
     } else
     {
         //stop idle if queue is empty
-        if (debug) printf("stop ev_idle\n");
+        LDEBUG("stop ev_idle");
         ev_idle_stop(loop, w);
         Py_DECREF(pydeferqueue);
         pydeferqueue=NULL;
@@ -185,7 +186,45 @@ int handle_uri(struct client *cli)
     return 0;
 }
 
+/*
+	TODO: Clearly we need a fast rbtree to store clients.
+	Also it whould be better to store in a known struct and expose it to python as a class.
+*/
+struct
+{
+	struct client *cli;
+	PyObject *pyenviron;
+	PyObject *pystart_response;
+} saveclient[100000];
 
+static struct client* _current_client = NULL;
+struct client* current_client()
+{
+	return _current_client;
+}
+
+int saved = 0;
+void save_client(struct client *cli, PyObject *pyenviron, PyObject* pystart_response)
+{
+	saveclient[saved].cli = cli;
+	saveclient[saved].pyenviron = pyenviron;
+	saveclient[saved].pystart_response = pystart_response;
+	LDEBUG("saved %i %p/%p/%p", saved, cli, pyenviron, pystart_response);
+	++saved;
+}
+
+struct client* get_client(PyObject *pyenviron, PyObject* pystart_response)
+{
+	int i;
+	for (i = 0; i < saved; ++i) {
+		if (saveclient[i].pyenviron == pyenviron) {
+			if (saveclient[i].pystart_response == pystart_response) {
+				return saveclient[i].cli;
+			}
+		}
+	}
+	return NULL;
+}
 
 /*
 This is the main python handler that will transform and treat the client html request. 
@@ -196,22 +235,22 @@ return -2 in case the request command is not implemented
 */
 int python_handler(struct client *cli)
 {
+LDEBUG("<< ENTER %p", cli);
     PyObject *pydict, *pydummy;
     int ret;
 
-    if (debug)
-         printf("host=%s,port=%i:python_handler:HEADER:\n%s**\n", cli->remote_addr, cli->remote_port, cli->input_header);
+    LDEBUG("host=%s,port=%i:python_handler:HEADER:\n%s**", cli->remote_addr, cli->remote_port, cli->input_header);
     //  1)initialise environ
     PyObject *pyenviron_class=PyObject_GetAttrString(py_base_module, "Environ");
     if (!pyenviron_class)
     {
-         printf("load Environ failed from base module");
+         LERROR("load Environ failed from base module");
          exit(1);
     }
     PyObject *pyenviron=PyObject_CallObject(pyenviron_class, NULL);
     if (!pyenviron)
     {
-         printf("Failed to create an instance of Environ");
+         LERROR("Failed to create an instance of Environ");
          exit(1);
     }
     Py_DECREF(pyenviron_class);
@@ -264,7 +303,7 @@ int python_handler(struct client *cli)
     {
          if (py_generic_cb==NULL)
          {
-            //printf("uri not found\n");
+            //printf("uri not found");
             Py_DECREF(pyenviron);
             return 0;
          }
@@ -312,34 +351,43 @@ int python_handler(struct client *cli)
     // 8) execute python callbacks with his parameters
     PyObject *pyarglist = Py_BuildValue("(OO)", pyenviron, pystart_response );
     cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
+	int defer_response = 0;
     if (cli->response_content!=NULL) 
     {
         if ((PyFile_Check(cli->response_content)==0) && (PyIter_Check(cli->response_content)==1)) {
             //This is an Iterator object. We have to execute it first
             cli->response_content_obj = cli->response_content;
             cli->response_content = PyIter_Next(cli->response_content_obj);
-        }
+			} else if (PyBool_Check(cli->response_content) == 1 && Py_True == cli->response_content) {
+				defer_response = 1;
+				Py_DECREF(cli->response_content);
+				cli->response_content = NULL;
+			}
     }
     Py_DECREF(pyarglist);
     Py_XDECREF(cli->wsgi_cb);
-    if (cli->response_content!=NULL) 
+	if (defer_response == 1) {
+		save_client(cli, pyenviron, pystart_response);
+		LDEBUG(">> EXIT %p", cli);
+		return 2;
+	} else if (cli->response_content!=NULL)
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
         strcpy(cli->response_header,PyString_AsString(pydummy));
-	cli->response_header_length=strlen(cli->response_header);
+		cli->response_header_length=strlen(cli->response_header);
         Py_DECREF(pydummy);
     }
     else 
     //python call return is NULL
     {
-        printf("Python error!!!\n");
+        LERROR("Python error!!!");
         if (str_append3(cli->response_header,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n", MAXHEADER)<0)
         {
-             printf("ERROR!!!! Response header bigger than foreseen:%i", MAXHEADER);
-             printf("HEADER TOP\n%s\nHEADER BOT\n", cli->response_header);
+             LDEBUG("ERROR!!!! Response header bigger than foreseen:%i", MAXHEADER);
+             LDEBUG("HEADER TOP\n%s\nHEADER BOT", cli->response_header);
              return -1;
         }
-	cli->response_header_length=strlen(cli->response_header);
+		cli->response_header_length=strlen(cli->response_header);
         if (PyErr_Occurred()) 
         { 
              //get_traceback();py_b
@@ -359,7 +407,7 @@ int python_handler(struct client *cli)
              Py_DECREF(pystderr);
              PyObject *pyres=PyObject_CallFunction(pygetvalue, NULL);
              Py_DECREF(pygetvalue);
-             printf("%s\n", PyString_AsString(pyres));
+             LDEBUG("%s", PyString_AsString(pyres));
              //test if we must send it to the page
              PyObject *pysendtraceback = PyObject_GetAttrString(py_config_module,"send_traceback_to_browser");
              cli->response_content=PyList_New(0);
@@ -389,7 +437,24 @@ int python_handler(struct client *cli)
     }
     Py_XDECREF(pystart_response);
     Py_XDECREF(pyenviron);
+LDEBUG(">> EXIT %p", cli);
     return 1;
+}
+
+void write_response_cb(struct ev_loop *loop, struct ev_io *w, int revents)
+{
+	struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
+
+LDEBUG("<<<<<<<<<<<<<<<<<<<<<<< ENTER %p", cli);
+
+	write_cli(cli, cli->response_header, cli->response_header_length, revents);
+	cli->response_iter_sent++; //-1: header sent
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
+
+	ev_io_stop(EV_A_ w);
+	ev_io_init(&cli->ev_write,write_cb,cli->fd,EV_WRITE);
+	ev_io_start(loop,&cli->ev_write);
+LDEBUG(">>>>>>>>>>>>>>>>>>>>>>>> EXIT %p", cli);
 }
 
 /*
@@ -397,6 +462,7 @@ Procedure that will write "len" bytes of "response" to the client.
 */
 int write_cli(struct client *cli, char *response, size_t len,  int revents)
 {
+LDEBUG("<< ENTER %p (%i)", cli, len);
     /* XXX The design of the function is broken badly: after the first EAGAIN
        error we should exit and wait for an EV_WRITE event. You can think about
        slow client or some client which holds a socket but don't read from one.
@@ -414,8 +480,7 @@ int write_cli(struct client *cli, char *response, size_t len,  int revents)
             }
             r=write(cli->fd,response ,sent_len);
             c++;
-            if (debug)
-                printf("host=%s,port=%i write_cli:uri=%s,r=%i,len=%i,c=%i\n", cli->remote_addr, cli->remote_port, cli->uri, (int)r, (int)len,c);
+            LDEBUG("host=%s,port=%i write_cli:uri=%s,r=%i,len=%i,c=%i", cli->remote_addr, cli->remote_port, cli->uri, (int)r, (int)len,c);
             if (((int)r<0) & (errno != EAGAIN))
             {
                 if (errno == EPIPE || errno == ECONNRESET) {
@@ -423,10 +488,10 @@ int write_cli(struct client *cli, char *response, size_t len,  int revents)
                     return 0;
                 }
                 cli->retry++;
-                fprintf(stderr,"Failed to write to the client:%s:%i, #:%i.\n", cli->remote_addr, cli->remote_port, cli->retry);
+                LERROR("Failed to write to the client:%s:%i, #:%i.", cli->remote_addr, cli->remote_port, cli->retry);
                 if (cli->retry>MAX_RETRY) 
                 {
-                    fprintf(stderr, "Connection closed after %i retries\n", cli->retry);
+                    LERROR("Connection closed after %i retries", cli->retry);
                     return 0; //stop the watcher and close the connection
                 }
                 // XXX We shouldn't sleep in an event-base server.
@@ -443,10 +508,12 @@ int write_cli(struct client *cli, char *response, size_t len,  int revents)
             }
         }
         //p==len
+LDEBUG("<< EXIT %p = %i", cli, 1);
         return 1;
     }
     else {
-        printf("write callback not ended correctly\n");
+        LERROR("write callback not ended correctly");
+LDEBUG("<< EXIT %p = %i", cli, 0);
         return 0; //stop the watcher and close the connection
     }
 
@@ -461,11 +528,16 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     int stop=0; //0: not stop, 1: stop, 2: stop and call tp close
     int ret; //python_handler return
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
+LDEBUG("<< ENTER %p", cli, cli->response_iter_sent);
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
     if (cli->response_iter_sent==-2)
     { 
+		_current_client = cli;
         //we must send an header or an error
         ret=python_handler(cli); //look for python callback and execute it
-        if (ret==0) //look for python callback and execute it
+		_current_client = NULL;
+		LDEBUG("python returned: %i", ret);
+        if (ret==0)
         {
             //uri not found
             str_append3(response,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ", VERSION ,"\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>", MAXHEADER);
@@ -491,11 +563,19 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
+		else if (ret==2)
+		{
+			//dont want to send response right now.
+			//save environ and start_response to later send
+			stop=0;
+			ev_io_stop(EV_A_ w);
+		}
         else
         {
             //uri found, we thus send the html header 
             write_cli(cli, cli->response_header, cli->response_header_length, revents);
             cli->response_iter_sent++; //-1: header sent
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
         }
     } 
     else if (strcmp(cli->cmd,"HEAD")==0)
@@ -505,13 +585,18 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     }
     else 
     {
+			LDEBUG("send body %p/%p", cli, cli->response_content);
         //we let the python developer to manage other HTTP command
         if (((PyList_Check(cli->response_content))||(PyTuple_Check(cli->response_content)))  && (cli->response_content_obj==NULL)) //we treat list object
         {
+				LDEBUG("list size=%i", PyList_Size(cli->response_content));
             int tuple = PyTuple_Check(cli->response_content);
             cli->response_iter_sent++;
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
+            LDEBUG("iter_sent=%i", cli->response_iter_sent);
             if (cli->response_iter_sent<(tuple ? PyTuple_Size(cli->response_content) : PyList_Size(cli->response_content))) 
             {
+				LDEBUG("will send");
                 PyObject *pydummy = tuple ? PyTuple_GetItem(cli->response_content, cli->response_iter_sent) : PyList_GetItem(cli->response_content, cli->response_iter_sent);
                 char *buff;
 #if (PY_VERSION_HEX < 0x02050000)
@@ -526,12 +611,14 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                     if (write_cli(cli, buff, buflen, revents)==0)
                     {
                         cli->response_iter_sent = tuple ? PyTuple_Size(cli->response_content) : PyList_Size(cli->response_content);  //break the for loop
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
                     }
                 }
                 else
                 {
-                    printf("The item %i of your list is not a string!!!!  It will be skipped\n",cli->response_iter_sent);
-                }            }
+                    LDEBUG("The item %i of your list is not a string!!!!  It will be skipped",cli->response_iter_sent);
+                }
+            }
             else // all iterations has been sent
             {
                 stop=2;
@@ -539,11 +626,13 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         } 
         else if (PyFile_Check(cli->response_content) && (cli->response_content_obj==NULL)) // we treat file object
         {
+				LDEBUG("is file");
             if (cli->response_iter_sent==-1) // we need to initialise the file descriptor
             {
                 cli->response_fp=PyFile_AsFile(cli->response_content);
             }
             cli->response_iter_sent++;
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
             char buff[MAX_BUFF]="";  
             size_t len=fread(buff, sizeof(char), MAX_BUFF, cli->response_fp);
             if ((int)len==0)
@@ -566,8 +655,10 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         } 
         else if ((cli->response_content_obj!=NULL) && (PyIter_Check(cli->response_content_obj))) 
         {
+				LDEBUG("is iter");
             //we treat Iterator object
             cli->response_iter_sent++;
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
             PyObject *pyelem = cli->response_content;
             if (pyelem == NULL) 
             {
@@ -592,27 +683,26 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 }
                 else
                 {
-                    printf("The item %i of your iterator is not a string!!!!  It will be skipped\n",cli->response_iter_sent);
+                    LDEBUG("The item %i of your iterator is not a string!!!!  It will be skipped",cli->response_iter_sent);
                 }
                 Py_DECREF(pyelem);
                 cli->response_content = PyIter_Next(cli->response_content_obj);
                 if (cli->response_content==NULL)
                 {
-                     if (debug)
-                     {
-                         printf("host=%s,port=%i iterator ended uri=%s\n", cli->remote_addr, cli->remote_port, cli->uri );
-                     }
+                     LDEBUG("host=%s,port=%i iterator ended uri=%s", cli->remote_addr, cli->remote_port, cli->uri );
                      stop=2;
                 }
             }    
         } 
         else 
         {
+				LDEBUG("is nothing");
             //printf("wsgi output of is neither a list, neither a fileobject, neither an iterable object!!!!!\n");
             PyErr_SetString(PyExc_TypeError, "Result must be a list, a fileobject or an iterable object");
             stop=1;
         }
     }// end of GET OR POST request
+LDEBUG("stop=%i", stop);
     if (stop==2)
     {
       if (cli->response_content!=NULL) {
@@ -631,6 +721,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         ev_io_stop(EV_A_ w);
         close_connection(cli);
     }
+LDEBUG(">> EXIT");
 }
 
 /*
@@ -639,6 +730,7 @@ The procedure is the connection callback registered in the event loop
 void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 { 
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_read)));
+	LDEBUG("<< ENTER %p", cli);
     size_t r=0;
     char rbuff[MAX_BUFF]="";
     int read_finished=0;
@@ -648,15 +740,17 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         r=read(cli->fd,rbuff,MAX_BUFF);
         //printf("read %i bytes\n", r);
         if ((int)r<0) {
-            fprintf(stderr, "Failed to read the client data. %i tentative\n", cli->retry);
+            LERROR("Failed to read the client data. %i tentative", cli->retry);
             cli->retry++;
             if (cli->retry>MAX_RETRY) 
             {
-                fprintf(stderr, "Connection closed after %i retries\n", cli->retry);
+                LERROR("Connection closed after %i retries", cli->retry);
                 ev_io_stop(EV_A_ w);
                 close_connection(cli);
+					LDEBUG(">> EXIT %p", cli);
                 return ;
                 }
+				LDEBUG(">> EXIT %p", cli);
             return;
         }
         if ((int)r==0) {
@@ -668,8 +762,7 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             memcpy(cli->input_header + cli->input_pos, rbuff, r); 
             cli->input_pos += r; 
             cli->input_header[cli->input_pos]='\0';
-            if (debug)
-                printf("host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i\n", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
+            LDEBUG("host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
             // if \r\n\r\n then end of header   
             
             cli->input_body=strstr(cli->input_header, "\r\n\r\n"); //use memmem ???
@@ -694,6 +787,7 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 }
             }
          }
+			LDEBUG("read_finished=%i", read_finished);
          if (read_finished)
          {
             //printf("read_finished\n");
@@ -712,8 +806,9 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
          }
     }
     else {
-        printf("read callback not ended correctly\n");
+        LERROR("read callback not ended correctly");
     }
+	LDEBUG(">> EXIT %p", cli);
 }
 
 /*
@@ -731,6 +826,7 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         }
     //intialisation of the client struct
     cli = calloc(1,sizeof(struct client));
+	LDEBUG("<< ENTER %p", cli);
     cli->fd=client_fd;
     cli->input_header=malloc(1*sizeof(char));  //will be free'd when we will close the connection
     cli->input_body=NULL;
@@ -741,18 +837,19 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->response_header[0]='\0';
     cli->response_content=NULL;
     cli->response_content_obj=NULL;
-    if (debug)
-        printf("host:%s,port:%i accept_cb: cli:%p, input_header:%p\n", inet_ntoa (client_addr.sin_addr),ntohs(client_addr.sin_port), cli, cli->input_header);
+    LDEBUG("host:%s,port:%i accept_cb: cli:%p, input_header:%p", inet_ntoa (client_addr.sin_addr),ntohs(client_addr.sin_port), cli, cli->input_header);
     cli->input_pos=0;
     cli->retry=0;
     cli->response_iter_sent=-2;
+LDEBUG("CLIENT=%p ITERATOR=%i", cli, cli->response_iter_sent);
     cli->remote_addr=inet_ntoa (client_addr.sin_addr);
     cli->remote_port=ntohs(client_addr.sin_port);
     if (setnonblock(cli->fd) < 0)
-                fprintf(stderr, "failed to set client socket to non-blocking");
+                LERROR("failed to set client socket to non-blocking");
     ev_io_init(&cli->ev_read,connection_cb,cli->fd,EV_READ);
     //printf("accept_cb done\n");
     ev_io_start(loop,&cli->ev_read);
+	LDEBUG(">> EXIT %p", cli);
 }
 
 /*
@@ -760,7 +857,7 @@ This is the sigint callback registered in the event loop
 */
 void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents)
 {
-    printf("Bye.\n");
+    LDEBUG("Bye.");
     ev_unloop(loop, EVUNLOOP_ALL);
 }
 
@@ -778,6 +875,6 @@ This is the sigpipe callback registered in the event loop
 */
 void sigpipe_cb(struct ev_loop *loop, ev_signal *w, int revents)
 {
-    printf("SIGPIPE encountered !!!! We ignore it.\n");
+    LERROR("SIGPIPE encountered !!!! We ignore it.");
 }
 

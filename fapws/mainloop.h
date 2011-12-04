@@ -15,6 +15,8 @@ int write_cli(struct client *cli, char *response, size_t len,  int revents);
 
 void write_cb(struct ev_loop *loop, struct ev_io *w, int revents);
 
+void write_response_cb(struct ev_loop *loop, struct ev_io *w, int revents);
+
 void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents);
 
 void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents);
@@ -24,3 +26,9 @@ void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents);
 void sigterm_cb(struct ev_loop *loop, ev_signal *w, int revents);
 
 void sigpipe_cb(struct ev_loop *loop, ev_signal *w, int revents);
+
+void save_client(struct client *cli, PyObject *pyenviron, PyObject* pystart_response);
+
+struct client* get_client(PyObject *pyenviron, PyObject* pystart_response);
+
+struct client* current_client();

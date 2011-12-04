@@ -1,3 +1,4 @@
+#define SYSLOG_NAMES
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +8,8 @@
 #include <signal.h>
 #include <assert.h>
 #include <ctype.h>
+#include <stdarg.h>
+#include <syslog.h>
 #include "extra.h"
 
 
@@ -164,3 +167,40 @@ char *cur_time_rfc1123()
     return time_rfc1123(t);
 }
 
+static const char* priority_name(unsigned int prio)
+{
+	if (prio > LOG_DEBUG)
+		return NULL;
+
+	CODE* c = &prioritynames[0];
+	do {
+		if (c->c_val == prio)
+			return c->c_name;
+	} while ((++c)->c_name);
+	return NULL;
+}
+
+void log_debug(unsigned int prio, const char* file, const char* func, int line, const char* fmt, ...)
+{
+	char mesg[1024];
+	va_list va;
+
+	if (!file)
+		file = "<no-file>";
+
+	if (!func)
+		func = "<no-function>";
+
+	if (!fmt)
+		fmt = "<no-message>";
+
+	va_start(va, fmt);
+	vsnprintf(mesg, sizeof(mesg), fmt, va);
+	va_end(va);
+
+	FILE* fp = stderr; //future will log to file/syslog/whatever
+	const char *prio_name = priority_name(prio) ? : "";
+	const int ret = fprintf(fp, "%s: %s:%s:%i %s", prio_name, file, func, line, mesg);
+	if (ret > 0 && mesg[ret] != '\n')
+		fprintf(fp, "\n");
+}

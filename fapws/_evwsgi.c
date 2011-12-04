@@ -45,10 +45,10 @@
 /*
 Somme  global variables
 */
+int debug=1; //1 full debug detail: 0 nodebug
 char *server_name="127.0.0.1";
 char *server_port="8000";
 int sockfd;  // main sock_fd
-int debug=0; //1 full debug detail: 0 nodebug
 char *VERSION;
 #define BACKLOG 1024     // how many pending connections queue will hold
 char *date_format;
@@ -375,7 +375,7 @@ PyObject *py_defer(PyObject *self, PyObject *args)
         if (startidle==1)
         {
             //we create a new idle watcher and we start it
-            if (debug) printf("trigger idle_start \n");
+            LDEBUG("trigger idle_start");
             ev_idle_start(loop, idle_watcher);
         }
     }
@@ -415,6 +415,34 @@ PyObject *py_rfc1123_date(PyObject *self, PyObject *args)
     return result;
 }
 
+PyObject *py_write_response(PyObject *self, PyObject *args)
+{
+	PyObject *pyenviron, *pystart_response, *pymessage;
+	if (!PyArg_ParseTuple(args, "OOO", &pyenviron, &pystart_response, &pymessage))
+		return NULL;
+
+	struct client *cli = get_client(pyenviron, pystart_response);
+	if (!cli) {
+		Py_INCREF(pyenviron);
+		Py_INCREF(pystart_response);
+		cli = current_client();
+		save_client(cli, pyenviron, pystart_response);
+	}
+	LDEBUG("py_write_response %p", cli);
+
+	PyObject *o = PyList_GetItem(pymessage, 0);
+	LDEBUG("py_write_response mesg: %s", PyString_AsString(o));
+
+	PyObject *pydummy = PyObject_Str(pystart_response);
+	strcpy(cli->response_header,PyString_AsString(pydummy));
+	cli->response_header_length=strlen(cli->response_header);
+	Py_DECREF(pydummy);
+	Py_INCREF(pymessage);
+	cli->response_content = pymessage;
+	ev_io_init(&cli->ev_write,write_response_cb,cli->fd,EV_WRITE);
+	ev_io_start(loop,&cli->ev_write);
+	return Py_None;
+}
 
 static PyMethodDef EvhttpMethods[] = {
     {"start", py_ev_start, METH_VARARGS, "Define evhttp sockets"},
@@ -432,6 +460,7 @@ static PyMethodDef EvhttpMethods[] = {
     {"defer", py_defer, METH_VARARGS, "defer the execution of a python function."},
     {"defer_queue_size", py_defer_queue_size, METH_VARARGS, "Get the size of the defer queue"},
     {"rfc1123_date", py_rfc1123_date, METH_VARARGS, "trasnform a time (in sec) into a string compatible with the rfc1123"},
+    {"write_response", py_write_response, METH_VARARGS, ""},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
