@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-from setuptools import setup, find_packages, Extension
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
+from distutils.extension import Extension
 import os
 import sys
 import os.path
@@ -29,7 +33,7 @@ def find_file(fname, dirs):
                 founded=True
                 break
         if founded:
-            print "----------Find",fname," in ", ckdir
+            print("----------Find",fname," in ", ckdir)
             return ckdir
         if localdirs:
             res=find_file(fname,localdirs)
@@ -40,8 +44,8 @@ def find_file(fname, dirs):
 readme = read_file('README.markdown')
 
 if "posix" not in os.name:
-    print "Are you really running a posix compliant OS ?"
-    print "Be posix compliant is mandatory"
+    print("Are you really running a posix compliant OS ?")
+    print("Be posix compliant is mandatory")
     sys.exit(1)
 
 search_library_dirs=[]
@@ -51,11 +55,11 @@ include_dirs=[]
 
 
 #we add, at the begining of the list, the existing environemental variables
-if os.environ.has_key('C_INCLUDE_PATH'):
+if 'C_INCLUDE_PATH' in os.environ.keys():
     search_include_dirs.extend(os.environ['C_INCLUDE_PATH'].split(os.pathsep))
-if os.environ.has_key('LD_LIBRARY_PATH'):
+if 'LD_LIBRARY_PATH' in os.environ.keys():
     search_library_dirs.extend(os.environ['LD_LIBRARY_PATH'].split(os.pathsep))
-if os.environ.has_key('LIBPATH'):
+if 'LIBPATH' in os.environ.keys():
     search_library_dirs.append(os.path.join(os.environ['LIBPATH'],'lib'))
     search_include_dirs.append(os.path.join(os.environ['LIBPATH'],'include'))
 
@@ -65,31 +69,31 @@ if os.environ.has_key('LIBPATH'):
 search_library_dirs.extend(['/usr/lib','/usr/local/lib','/opt/local/lib','/usr/lib64','/usr/pkg/lib/ev'])
 search_include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include','/usr/pkg/include/ev'])
 
-version=platform.python_version_tuple()
-if int(version[0])==2 and int(version[1])>=4:
-    print "Find python 2.4 or higher"
-else:
-    print "Fapws has been developped with python 2.4 or higher (not yet python 3.X). Instead we found python %s.%s" % (version[0], version[1])
-    sys.exit(1)
+#version=platform.python_version_tuple()
+#if int(version[0])==2 and int(version[1])>=4:
+#    print("Find python 2.4 or higher")
+#else:
+#    print("Fapws has been developped with python 2.4 or higher (not yet python 3.X). Instead we found python %s.%s" % (version[0], version[1]))
+#    sys.exit(1)
 
 
 res=find_file('ev.h',search_include_dirs)
 if res==False:
-    print "We don't find 'ev.h' which is a mandatory file to compile Fapws"
-    print "Please install the sources of libev, or provide the path by setting the shell environmental variable C_INCLUDE_PATH"
+    print("We don't find 'ev.h' which is a mandatory file to compile Fapws")
+    print("Please install the sources of libev, or provide the path by setting the shell environmental variable C_INCLUDE_PATH")
     sys.exit(1)
 include_dirs.append(res)
 
 res=find_file('Python.h',[distutils.sysconfig.get_python_inc()])
 if res==False:
-    print "We don't find 'Python.h' which is a mandatory file to compile Fapws"
-    print "Please install the sources of python, or provide the path by setting the shell environmental variable C_INCLUDE_PATH"
+    print("We don't find 'Python.h' which is a mandatory file to compile Fapws")
+    print("Please install the sources of python, or provide the path by setting the shell environmental variable C_INCLUDE_PATH")
     sys.exit(1)
 include_dirs.append(res)
 res=find_file('libev.a',search_library_dirs)
 if res==False:
-    print "We don't find 'libev.so' which is a mandatory file to run Fapws"
-    print "Please install libev, or provide the path by setting the shell environmental variable LD_LIBRARY_PATH"
+    print("We don't find 'libev.so' which is a mandatory file to run Fapws")
+    print("Please install libev, or provide the path by setting the shell environmental variable LD_LIBRARY_PATH")
     sys.exit(1)
 library_dirs.append(res)
 extra_link_args=['-Wl,-R%s' % res]
@@ -114,7 +118,7 @@ classifiers=['Development Status :: 4 - Beta','Environment :: Web Environment','
       # -*- Entry points: -*-
       """,
 
-      packages= find_packages(),
+      packages= ['fapws','fapws.contrib','fapws.contrib.siforms'],
       ext_modules = [
           Extension('fapws._evwsgi',
                   depends=['fapws/extra.h','fapws/wsgi.h','fapws/mainloop.h','fapws/common.h'],
