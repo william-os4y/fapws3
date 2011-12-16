@@ -47,6 +47,7 @@
 Somme  global variables
 */
 char *server_name="127.0.0.1";
+int server_name_length;
 char *server_port="8000";
 int sockfd;  // main sock_fd
 int debug=0; //1 full debug detail: 0 nodebug
@@ -84,12 +85,12 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
     int yes=1;
     int rv;
 
-    if (!PyArg_ParseTuple(args, "ss", &server_name, &server_port))
+    if (!PyArg_ParseTuple(args, "s#s", &server_name, &server_name_length, &server_port))
     {
         PyErr_SetString(ServerError, "Failed to parse the start parameters. Must be 2 strings.");
         return NULL;
     }
-    if (strcmp(server_port, "unix") != 0) {
+    if (strncmp(server_port, "unix", 4) != 0) {
         memset(&hints, 0, sizeof hints);
         hints.ai_family = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
@@ -138,10 +139,10 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
         
         struct sockaddr_un sockun;
         sockun.sun_family = AF_UNIX;
-        strcpy(sockun.sun_path, server_name);
-        if (sockun.sun_path[0] == '@')
-            sockun.sun_path[0] = '\0';
-        if (bind(sockfd, (struct sockaddr *) &sockun, strlen(server_name)+2) == -1) {
+        memcpy(sockun.sun_path, server_name, server_name_length);
+        /*if (sockun.sun_path[0] == '@')
+            sockun.sun_path[0] = '\0';*/
+        if (bind(sockfd, (struct sockaddr *) &sockun, server_name_length+2) == -1) {
             close(sockfd);
             perror("server: bind");
             PyErr_SetString(ServerError, "server: failed to bind");
@@ -153,11 +154,12 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
         PyErr_SetString(ServerError, "listen");
         return NULL;
     }
-    printf("listen on %s:%s\n", server_name, server_port);
+    if (server_name[0] == 0)
+        printf("listen on @%s:unix\n", server_name+1);
+    else
+        printf("listen on %s:%s\n", server_name, server_port);
     return Py_None;
 }
-
-
 
 /*
 Procedure exposed in Python will generate and start the event loop
