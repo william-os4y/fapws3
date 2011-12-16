@@ -132,15 +132,20 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
         sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (sockfd == -1) {
             perror("server: socket");
-            exit(1);
+            PyErr_SetString(ServerError, "server: failed to create socket");
+            return NULL;
         }
         
         struct sockaddr_un sockun;
+        sockun.sun_family = AF_UNIX;
         strcpy(sockun.sun_path, server_name);
-        if (bind(sockfd, (struct sockaddr *) &sockun, sizeof(sockun)) == -1) {
+        if (sockun.sun_path[0] == '@')
+            sockun.sun_path[0] = '\0';
+        if (bind(sockfd, (struct sockaddr *) &sockun, strlen(server_name)+2) == -1) {
             close(sockfd);
             perror("server: bind");
-            exit(1);
+            PyErr_SetString(ServerError, "server: failed to bind");
+            return NULL;
         }
     }
 
@@ -205,6 +210,15 @@ static PyObject *py_run_loop(PyObject *self, PyObject *args)
 }
 
 /*
+Procedure exposed in Python to provide the sockfd
+*/
+static PyObject *py_socket_fd(PyObject *self, PyObject *args)
+{
+    PyObject *pyres = PyLong_FromLong(sockfd);
+    return pyres;
+}
+
+/*
 Procedure exposed in Python to provide libev's ABI version
 */
 static PyObject *py_libev_version(PyObject *self, PyObject *args)
@@ -246,6 +260,10 @@ static PyObject *py_add_wsgi_cb(PyObject *self, PyObject *args)
     PyObject *py_tuple;
     if (!PyArg_ParseTuple(args, "O", &py_tuple)) 
         return NULL;
+    if (py_registered_uri == NULL) {
+        PyErr_SetString(ServerError, "Base module not set");
+        return NULL;
+    }
     PyList_Append(py_registered_uri, py_tuple);
     return Py_None;    
 }
@@ -450,6 +468,7 @@ static PyMethodDef EvhttpMethods[] = {
     {"defer", py_defer, METH_VARARGS, "defer the execution of a python function."},
     {"defer_queue_size", py_defer_queue_size, METH_VARARGS, "Get the size of the defer queue"},
     {"rfc1123_date", py_rfc1123_date, METH_VARARGS, "trasnform a time (in sec) into a string compatible with the rfc1123"},
+    {"socket_fd", py_socket_fd, METH_VARARGS, "Return the server socket's file descriptor"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 

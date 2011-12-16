@@ -94,7 +94,8 @@ a dictionary key and list of values
  'fapws.raw_header': '...'
  'fapws.major_minor': '1.1', 
  'fapws.remote_addr': '127.0.0.1', 
- 'fapws.remote_port': 60580, 
+ 'fapws.remote_port': 60580,
+ 'fapws.socket_fd': 4,
  'REQUEST_METHOD': 'GET', 
  'SCRIPT_NAME': '/hello', 
  'QUERY_STRING': 'param=key', 
@@ -395,6 +396,9 @@ PyObject *py_get_request_info(struct client *cli)
     Py_DECREF(pydummy);
     pydummy=Py_BuildValue("H", cli->remote_port);
     PyDict_SetItemString(pydict, "fapws.remote_port", pydummy);
+    Py_DECREF(pydummy);
+    pydummy=PyLong_FromLong(cli->fd);
+    PyDict_SetItemString(pydict, "fapws.socket_fd", pydummy);
     Py_DECREF(pydummy);
     return pydict;
 }
