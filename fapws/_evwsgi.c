@@ -32,6 +32,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <assert.h>
+#include <sys/un.h>
 
 #include <ev.h>
 
@@ -88,42 +89,59 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
         PyErr_SetString(ServerError, "Failed to parse the start parameters. Must be 2 strings.");
         return NULL;
     }
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE; // use my IP
-    if ((rv = getaddrinfo(server_name, server_port, &hints, &servinfo)) == -1) {
-        PyErr_Format(ServerError, "getaddrinfo: %s", gai_strerror(rv));
-        return NULL;
-    }
+    if (strcmp(server_port, "unix") != 0) {
+        memset(&hints, 0, sizeof hints);
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE; // use my IP
+        if ((rv = getaddrinfo(server_name, server_port, &hints, &servinfo)) == -1) {
+            PyErr_Format(ServerError, "getaddrinfo: %s", gai_strerror(rv));
+            return NULL;
+        }
 
-    // loop through all the results and bind to the first we can
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        // loop through all the results and bind to the first we can
+        for(p = servinfo; p != NULL; p = p->ai_next) {
+            sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+            if (sockfd == -1) {
+                perror("server: socket");
+                continue;
+            }
+
+            if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                    sizeof(int)) == -1) {
+                perror("setsockopt");
+            }
+
+            if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+                close(sockfd);
+                perror("server: bind");
+                continue;
+            }
+
+            break;
+        }
+        
+        freeaddrinfo(servinfo); // all done with this structure
+
+        if (p == NULL)  {
+            PyErr_SetString(ServerError, "server: failed to bind");
+            return NULL;
+        }
+        
+    } else {
+        sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (sockfd == -1) {
             perror("server: socket");
-            continue;
+            exit(1);
         }
-
-        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
-                sizeof(int)) == -1) {
-            perror("setsockopt");
-        }
-
-        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+        
+        struct sockaddr_un sockun;
+        strcpy(sockun.sun_path, server_name);
+        if (bind(sockfd, (struct sockaddr *) &sockun, sizeof(sockun)) == -1) {
             close(sockfd);
             perror("server: bind");
-            continue;
+            exit(1);
         }
-
-        break;
-    }
-
-    freeaddrinfo(servinfo); // all done with this structure
-
-    if (p == NULL)  {
-        PyErr_SetString(ServerError, "server: failed to bind");
-        return NULL;
     }
 
     if (listen(sockfd, BACKLOG) == -1) {
