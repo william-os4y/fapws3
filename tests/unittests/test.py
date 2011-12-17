@@ -5,6 +5,13 @@ import os.path
 
 import pycurl
 import os
+import sys
+
+if len(sys.argv)>1 and sys.argv[1]=="socket":
+  import socket
+  socket_server = True
+else:
+  socket_server = False
 
 successes=0
 failures=0
@@ -23,9 +30,26 @@ def test(search, test, data):
         print "SUCCESS"
         successes+=1
 
+class UHTTPConnection(httplib.HTTPConnection):
+    """Subclass of Python library HTTPConnection that
+       uses a unix-domain socket.
+       borrowed from http://7bits.nl/blog/2007/08/15/http-on-unix-sockets-with-python
+    """
+ 
+    def __init__(self, path):
+        httplib.HTTPConnection.__init__(self, 'localhost')
+        self.path = path
+ 
+    def connect(self):
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.connect(self.path)
+        self.sock = sock
 
-con = httplib.HTTPConnection("127.0.0.1:8080")
-
+if socket_server:
+    con = UHTTPConnection("\0/org/fapws3/server")
+else:
+    con = httplib.HTTPConnection("127.0.0.1:8080")
+    
 if 1:
   print "=== Normal get ==="
   con.request("GET", "/env/param?key=val")
@@ -105,27 +129,30 @@ if 1:
   content=response.read()
   test("OK. params are:{'var1': ['value1'], 'var2': ['value2']}", response.status==200, content)
 
-  print "=== Post with multipart ==="
-  pf = [('field1', 'this is a test using httppost & stuff'),
-      ('field2', (pycurl.FORM_FILE, 'short.txt'))
-     ]
+  if socket_server == True:
+    print "=== Post multipart is skipped on Socket server ==="
+  else:
+    print "=== Post with multipart ==="
+    pf = [('field1', 'this is a test using httppost & stuff'),
+        ('field2', (pycurl.FORM_FILE, 'short.txt'))
+       ]
 
-  response=""
-  def echo(data):
-    global response
-    response+=data
-    
-  fpath='/tmp/short.txt'
-  if os.path.isfile(fpath):
-    os.remove(fpath) #we remove the data stored by the MultipartFormData
+    response=""
+    def echo(data):
+      global response
+      response+=data
+   
+    fpath='/tmp/short.txt'
+    if os.path.isfile(fpath):
+      os.remove(fpath) #we remove the data stored by the MultipartFormData
 
-  c = pycurl.Curl()
-  c.setopt(c.URL, 'http://127.0.0.1:8080/testpost')
-  c.setopt(c.WRITEFUNCTION, echo)
-  c.setopt(c.HTTPPOST, pf)
-  c.perform()
-  c.close()
-  test("OK. params are:{'field2': ['/tmp/short.txt', {'Content-Type': 'text/plain', 'size': 14L}], 'field1': ['this is a test using httppost & stuff']}", 1==1, response)
+    c = pycurl.Curl()
+    c.setopt(c.URL, 'http://127.0.0.1:8080/testpost')
+    c.setopt(c.WRITEFUNCTION, echo)
+    c.setopt(c.HTTPPOST, pf)
+    c.perform()
+    c.close()
+    test("OK. params are:{'field2': ['/tmp/short.txt', {'Content-Type': 'text/plain', 'size': 14L}], 'field1': ['this is a test using httppost & stuff']}", 1==1, response)
 
   print "=== Options ==="
   con.request("OPTIONS", "/")

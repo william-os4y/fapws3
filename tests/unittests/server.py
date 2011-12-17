@@ -8,6 +8,12 @@ import sys
 from fapws.contrib import views, zip, log
 import mybase
 
+if len(sys.argv)>1 and sys.argv[1]=="socket":
+  import socket
+  socket_server = True
+else:
+  socket_server = False
+
 
 def env(environ, start_response):
     print environ
@@ -82,7 +88,10 @@ def badscript(environ, start_response):
 
 
 def start():
-    evwsgi.start("0.0.0.0", "8080")
+    if socket_server:
+        evwsgi.start("\0/org/fapws3/server", "unix")
+    else:
+        evwsgi.start("0.0.0.0", "8080")
     evwsgi.set_base_module(mybase)
     
  
