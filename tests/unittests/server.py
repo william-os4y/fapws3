@@ -10,7 +10,7 @@ import mybase
 
 
 def env(environ, start_response):
-    print environ
+    print(environ)
     start_response('200 OK', [('Content-Type','text/html')])
     res=[]
     for key,val in environ.items():
@@ -21,7 +21,7 @@ def env(environ, start_response):
 
 def hello(environ, start_response):
     start_response('200 OK', [('Content-Type','text/html')])
-    return ["Hello"," world!!"]
+    return [b"Hello"," world!!"]
 
 def iteration(environ, start_response):
     start_response('200 OK', [('Content-Type','text/plain')])
@@ -56,7 +56,7 @@ def staticshort(environ, start_response):
     return f
 
 def testpost(environ, start_response):
-    print environ
+    print(environ)
     if "multipart/form-data" in environ['HTTP_CONTENT_TYPE']:
         res=environ["wsgi.input"].getvalue()
     elif "application/x-www-form-urlencoded" in environ['HTTP_CONTENT_TYPE']:
