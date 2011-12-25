@@ -15,29 +15,26 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import datetime
-from Cookie import SimpleCookie, CookieError
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
+from http.cookies import SimpleCookie, CookieError
+from io import StringIO
 import sys
 import string
 import traceback
 import time
 
-import config
-import httplib
+from fapws import config
+import http
 
 
 def get_status(code):
-    return "%s %s" % (code, httplib.responses[code])
+    return "%s %s" % (code, http.client.responses[code])
 
 
 class Environ(dict):
     def __init__(self, *arg, **kw):
         self['wsgi.version'] = (1, 0)
-        self['wsgi.errors'] = StringIO.StringIO()
-        self['wsgi.input'] = StringIO.StringIO()
+        self['wsgi.errors'] = StringIO()
+        self['wsgi.input'] = StringIO()
         self['wsgi.multithread'] = False
         self['wsgi.multiprocess'] = True
         self['wsgi.run_once'] = False
@@ -131,7 +128,6 @@ supported_HTTP_command = ["GET", "POST", "HEAD", "OPTIONS"]
 
 def split_len(seq, length):
     return [seq[i:i + length] for i in range(0, len(seq), length)]
-
 
 def parse_cookies(environ):
     #transform the cookie environment into a SimpleCokkie object

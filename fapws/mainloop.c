@@ -35,6 +35,36 @@ char * VERSION;
 PyObject *py_generic_cb; 
 char * date_format;
 
+/* 
+For PYthon3 compatibility 
+*/
+extern PyTypeObject PyIOBase_Type;
+int PyFile_Check(PyObject *obj) 
+{
+    return PyObject_IsInstance(obj, (PyObject *)&PyIOBase_Type);
+}
+
+FILE *PyFile_AsFile(PyObject *pfd)
+{
+   FILE *fp;
+   int fd = PyObject_AsFileDescriptor(pfd);
+   fp = fdopen(fd, "r");
+   return fp;
+}
+
+char *PyString_AsChar(PyObject *pyobj)
+{
+   
+   PyObject *pydummy = PyUnicode_AsEncodedString(pyobj, "utf-8", "Error"); 
+   char *buf = PyBytes_AsString(pydummy); 
+   Py_DECREF(pydummy);
+   PyObject_Print(pyobj,stdout,1);printf("\n");
+   printf("BUFFER:%s\n", buf);
+   return buf;
+}
+
+
+
 
 
 /*
@@ -172,7 +202,7 @@ int handle_uri(struct client *cli)
         py_uri =PyTuple_GetItem(py_item,0);
         wsgi_cb = PyTuple_GetItem(py_item,1);
         Py_INCREF(wsgi_cb); //because of GetItem RTFM
-        uri=PyString_AsString(py_uri);
+        uri=PyString_AsChar(py_uri);
         res=strncmp(uri, cli->uri, strlen(uri));
         if (res==0)
         {
@@ -228,6 +258,8 @@ int python_handler(struct client *cli)
     PyObject *pysupportedhttpcmd = PyObject_GetAttrString(py_base_module, "supported_HTTP_command");
     if (cli->cmd==NULL) pydummy=Py_None; 
     else pydummy = PyString_FromString(cli->cmd);
+    PyObject_Print(pydummy,stdout, 1); printf("\n");
+    PyObject_Print(pysupportedhttpcmd,stdout, 1); printf("\n");
     if (PySequence_Contains(pysupportedhttpcmd,pydummy)!=1)
     {
         //return not implemented 
@@ -252,7 +284,7 @@ int python_handler(struct client *cli)
                PyString_Concat(&pydummy, PyString_FromString(", "));
         }
         PyString_Concat(&pydummy, PyString_FromString("\r\nContent-Length: 0\r\n\r\n"));
-        strcpy(cli->response_header,PyString_AsString(pydummy));
+        strcpy(cli->response_header,PyString_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         cli->response_content=PyList_New(0);
         Py_DECREF(pyenviron);
@@ -262,9 +294,9 @@ int python_handler(struct client *cli)
     //  3)find if the uri is registered
     if (handle_uri(cli)!=1)
     {
+         printf("uri not found:%s\n", cli->uri);
          if (py_generic_cb==NULL)
          {
-            //printf("uri not found\n");
             Py_DECREF(pyenviron);
             return 0;
          }
@@ -294,7 +326,11 @@ int python_handler(struct client *cli)
     Py_DECREF(pydict);
     // 7) build response object
     PyObject *pystart_response_class=PyObject_GetAttrString(py_base_module, "Start_response");
+#if PY_MAJOR_VERSION >= 3
+    PyObject *pystart_response=PyObject_CallObject(pystart_response_class, NULL);
+#else
     PyObject *pystart_response=PyInstance_New(pystart_response_class, NULL, NULL);
+#endif
     Py_DECREF(pystart_response_class);
     // 7b) add the current date to the response object
     PyObject *py_response_header=PyObject_GetAttrString(pystart_response,"response_headers");
@@ -325,7 +361,7 @@ int python_handler(struct client *cli)
     if (cli->response_content!=NULL) 
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
-        strcpy(cli->response_header,PyString_AsString(pydummy));
+        strcpy(cli->response_header,PyString_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         Py_DECREF(pydummy);
     }
@@ -359,7 +395,7 @@ int python_handler(struct client *cli)
              Py_DECREF(pystderr);
              PyObject *pyres=PyObject_CallFunction(pygetvalue, NULL);
              Py_DECREF(pygetvalue);
-             printf("%s\n", PyString_AsString(pyres));
+             printf("%s\n", PyString_AsChar(pyres));
              //test if we must send it to the page
              PyObject *pysendtraceback = PyObject_GetAttrString(py_config_module,"send_traceback_to_browser");
              cli->response_content=PyList_New(0);
@@ -465,6 +501,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     { 
         //we must send an header or an error
         ret=python_handler(cli); //look for python callback and execute it
+        printf("Python Handler result: %i\n", ret);
         if (ret==0) //look for python callback and execute it
         {
             //uri not found
@@ -519,6 +556,8 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
 #else
                 Py_ssize_t buflen;
+                printf("tuple\n");
+                PyObject_Print(PyObject_Type(pydummy),stdout, 1);
                 if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
 #endif
                 {

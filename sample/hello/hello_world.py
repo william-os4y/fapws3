@@ -10,7 +10,7 @@ def start():
     
     def hello(environ, start_response):
         start_response('200 OK', [('Content-Type','text/html')])
-        return ["hello world!!"]
+        return [b"hello world!!"]
 
     def iteration(environ, start_response):
         start_response('200 OK', [('Content-Type','text/plain')])
@@ -22,7 +22,7 @@ def start():
     evwsgi.wsgi_cb(("/hello", hello))
     evwsgi.wsgi_cb(("/iterhello", iteration))
 
-    evwsgi.set_debug(0)    
+    evwsgi.set_debug(1)    
     evwsgi.run()
     
 

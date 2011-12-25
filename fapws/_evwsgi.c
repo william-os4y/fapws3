@@ -204,18 +204,30 @@ static PyObject *py_set_base_module(PyObject *self, PyObject *args)
 {
     if (!PyArg_ParseTuple(args, "O", &py_base_module)) 
         return NULL;
+
     py_config_module=PyObject_GetAttrString(py_base_module, "config");
     py_registered_uri = PyList_New(0);
 
     //Get the version from the config.py file
     PyObject *pyver=PyObject_GetAttrString(py_config_module,"SERVER_IDENT");
-    VERSION=PyString_AsString(pyver);
-    
+#if PY_MAJOR_VERSION >= 3
+    PyObject *pydummy_bytes;
+    if (PyUnicode_FSConverter(pyver, &pydummy_bytes))
+         VERSION = PyBytes_AsString(pydummy_bytes);
+#else
+    VERSION = PyString_AsString(pyver);
+#endif
+    printf("VERSION: %s\n", VERSION);
+ 
     //get the date format
     PyObject *pydateformat=PyObject_GetAttrString(py_config_module,"date_format");
+#if PY_MAJOR_VERSION >= 3
+    if (PyUnicode_FSConverter(pydateformat, &pydummy_bytes))
+         date_format=PyBytes_AsString(pydummy_bytes);
+#else
     date_format=PyString_AsString(pydateformat);
-    
-    
+#endif
+    printf("Date Format: %s\n", date_format);
     
     return Py_None;    
 }
@@ -416,7 +428,7 @@ PyObject *py_rfc1123_date(PyObject *self, PyObject *args)
 }
 
 
-static PyMethodDef EvhttpMethods[] = {
+static PyMethodDef evwsgiMethods[] = {
     {"start", py_ev_start, METH_VARARGS, "Define evhttp sockets"},
     {"set_base_module", py_set_base_module, METH_VARARGS, "set you base module"},
     {"run", py_run_loop, METH_VARARGS, "Run the main loop"},
@@ -434,14 +446,28 @@ static PyMethodDef EvhttpMethods[] = {
     {"rfc1123_date", py_rfc1123_date, METH_VARARGS, "trasnform a time (in sec) into a string compatible with the rfc1123"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
+ 
+static struct PyModuleDef evwsgiModule = {
+    PyModuleDef_HEAD_INIT,
+    "_evwsgi",
+    NULL,
+    -1,
+    evwsgiMethods
+}; 
 
 PyMODINIT_FUNC
-init_evwsgi(void)
+PyInit__evwsgi(void)
 {
     PyObject *m;
+#if PY_MAJOR_VERSION >= 3
+    m = PyModule_Create(&evwsgiModule);
+#else
     m = Py_InitModule("_evwsgi", EvhttpMethods);
-    
-    ServerError = PyErr_NewException("_evwsgi.error", NULL, NULL);
-    Py_INCREF(ServerError);
-    PyModule_AddObject(m, "error", ServerError);
+#endif
+
+// TODO: check the translation to python3 for the following lines    
+    //ServerError = PyErr_NewException("_evwsgi.error", NULL, NULL);
+    //Py_INCREF(ServerError);
+    //PyModule_AddObject(m, "error", ServerError);
+    return m;
 }

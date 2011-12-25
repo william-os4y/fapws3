@@ -9,14 +9,16 @@
 
 #define IS_PY3K
 #define PyString_AsString PyBytes_AsString
-#define PyString_FromString PyBytes_FromString
-#define PyString_FromStringAndSize PyBytes_FromStringAndSize
-#define PyString_FromFormat PyBytes_FromFormat
+#define PyString_FromString PyUnicode_FromString
+#define PyString_FromStringAndSize PyUnicode_FromStringAndSize
+#define PyString_FromFormat PyUnicode_FromFormat
 #define PyInt_FromString PyLong_FromString
-#define PyString_Concat PyBytes_Concat
-#define PyInstance_New PyObject_Call
-
+#define PyInt_FromLong PyLong_FromLong
+#define PyString_Concat PyUnicode_Concat
+#define PyBuffer_FromMemory PyBytes_FromStringAndSize
+#define PyObject_AsReadBuffer PyBytes_AsStringAndSize
 #endif 
+
 
 /*
 Structure we use for each client's connection. 
