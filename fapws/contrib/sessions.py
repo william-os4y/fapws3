@@ -15,7 +15,7 @@
 import binascii
 import datetime
 try:
-    import cPickle as pickle
+    import pickle as pickle
 except ImportError:
     import pickle
 import os
@@ -87,7 +87,7 @@ class Session:
             return None
         if type(exp) is datetime.datetime:
             expdate = exp
-        elif type(exp) in (str, unicode):
+        elif type(exp) in (str, str):
             expdate = datetime.datetime.fromtimestamp(time.mktime(time.strptime(exp, self.datetime_fmt)))
         else:
             raise ValueError("expiration_Date must be a datetime object or a string (%s)" % self.datetime_fmt)
@@ -129,9 +129,9 @@ if __name__ == "__main__":
     s=Session(DB, max_age=2) # we store data for 2 seconds
     s.newid() # we request an ID
     s.setdata({'test':'fapws values'}) # we set some values
-    print "Our DB:", s.getdata()
-    print "Those values will be stored for 2 seconds"
-    print "now we sleep for 3 seconds"
+    print("Our DB:", s.getdata())
+    print("Those values will be stored for 2 seconds")
+    print("now we sleep for 3 seconds")
     time.sleep(3)
-    print "Our DB:", s.getdata()
+    print("Our DB:", s.getdata())
     

@@ -106,7 +106,7 @@ class Start_response:
 
     def __str__(self):
         res = "HTTP/1.0 %s %s\r\n" % (self.status_code, self.status_reasons)
-        for key, val in self.response_headers.items():
+        for key, val in list(self.response_headers.items()):
             res += '%s: %s\r\n' % (key, val)
         if self.cookies:
             res += str(self.cookies) + "\r\n"

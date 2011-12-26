@@ -33,7 +33,7 @@ class Staticfile:
         try:
             f = open(fpath, "rb")
         except:
-            print "ERROR in Staticfile: file %s not existing" % (fpath)
+            print("ERROR in Staticfile: file %s not existing" % (fpath))
             start_response('404 File not found', [])
             return []
         fmtime = os.path.getmtime(fpath)

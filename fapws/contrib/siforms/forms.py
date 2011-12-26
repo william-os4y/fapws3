@@ -4,7 +4,7 @@ class FormFactory(type):
     """This is the factory required to gather every Form components"""
     def __init__(cls, name, bases, dct):
         cls.datas={}
-        for k,v in dct.items():
+        for k,v in list(dct.items()):
             if k[0]!="_":
                 cls.datas[k]=v
         return type.__init__(cls, name, bases, dct)
@@ -20,7 +20,7 @@ class Form(object):
         self.action=action
         self.method=method
         self.parameters=""
-        for k,v in kw.items():
+        for k,v in list(kw.items()):
             if k=="class_":
                 self.parameters+=' class="%s"' % (v)
             else:
@@ -64,7 +64,7 @@ class Form(object):
         res+="<fieldset>\n<ol>\n"
         for name in form_fields:
             obj=self.datas[name]
-            if self.errors.has_key(name):
+            if name in self.errors:
                 res+= '<li class="error">'
                 errormsg=self.render_error(name)+"\n"
             else:
@@ -90,7 +90,7 @@ class Form(object):
         self.errors={}
         for name in form_fields:
             obj=self.datas[name]
-            if input_values.has_key(name):
+            if name in input_values:
                 data=input_values[name]
             else:
                 data=""
@@ -122,10 +122,10 @@ class Form(object):
                 if j==1:
                     pk_path=[]
                     for key in self._dbkey:
-                        pk_path.append(unicode(data[key]))
-                    res+="""<td %s><a href="/admin/edit/%s/%s">%s</a></td>""" % (obj.list_attrs,self.__class__.__name__, "/".join(pk_path),unicode(data[name] or ""))
+                        pk_path.append(str(data[key]))
+                    res+="""<td %s><a href="/admin/edit/%s/%s">%s</a></td>""" % (obj.list_attrs,self.__class__.__name__, "/".join(pk_path),str(data[name] or ""))
                 else:
-                    res+="<td %s>%s</td>" % (obj.list_attrs, unicode(data[name] or ""))
+                    res+="<td %s>%s</td>" % (obj.list_attrs, str(data[name] or ""))
                 j+=1
             res+="</tr>\n"
             i+=1

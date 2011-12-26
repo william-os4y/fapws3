@@ -23,7 +23,7 @@ class CGIApplication:
         self.cgi_environ = {}
 
     def _setup_cgi_environ(self, environ):
-        for key, val in environ.items():
+        for key, val in list(environ.items()):
             if type(val) is str:
                 self.cgi_environ[key] = val
         self.cgi_environ['REQUEST_URI'] = environ['fapws.uri']

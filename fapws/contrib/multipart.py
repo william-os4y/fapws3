@@ -102,10 +102,10 @@ class MultipartFormData(object):
                 elif line.strip()=="" and self._inheader:
                     self._inheader=False
                 elif self._inheader:
-                    key,val=map(lambda x: x.strip(),  line.split(':'))
+                    key,val=[x.strip() for x in line.split(':')]
                     if key=="Content-Disposition" and val[0:10]=="form-data;":
                         for elem in val[11:].split(';'):
-                            pkey,pval=map(lambda x: x.strip(),  elem.split('='))
+                            pkey,pval=[x.strip() for x in elem.split('=')]
                             if pval[0]=='"' and pval[-1]=='"':
                                 pval=pval[1:-1]
                             if pkey=="filename":
@@ -133,6 +133,6 @@ class MultipartFormData(object):
     def get(self, key):
         return self.results.get(key, None)
     def keys(self):
-        return self.results.keys()
+        return list(self.results.keys())
     
 

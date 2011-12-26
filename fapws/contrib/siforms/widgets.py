@@ -30,7 +30,7 @@ class Widget(object):
         self.base=""
         self.list_attrs=""
         self.params=kw
-        self.label=unicode(label)
+        self.label=str(label)
         self.required=required
         self.default=default
         self.label_attr={'class':"table"}
@@ -38,16 +38,16 @@ class Widget(object):
         """Generate the label in html
         """
         if not self.label:
-            return u""
+            return ""
         lid=makeid(name)
         if self.required and "required" not in self.label_attr.get('class',''):
             self.label_attr['class']+=" required"
         attrs=""
-        for key,val in self.label_attr.items():
+        for key,val in list(self.label_attr.items()):
             attrs+='%s="%s" ' % (key, val)
-        return u"""<label for="%s" %s>%s</label>""" % (lid, attrs, self.label)
+        return """<label for="%s" %s>%s</label>""" % (lid, attrs, self.label)
     def _manage_class(self):
-        if self.params.has_key("class_"):
+        if "class_" in self.params:
             self.params["class"]=self.params["class_"]
             del self.params["class_"]
 
@@ -57,11 +57,11 @@ class Widget(object):
         """
         #the 2 following lines must aways be present
         self._manage_class()
-        parameters=" ".join(['%s="%s"' % (k,v) for k,v in self.params.items()])
+        parameters=" ".join(['%s="%s"' % (k,v) for k,v in list(self.params.items())])
         res=self.getlabel(name)
         if not value:
             value=self.default
-        res+="""<%s name="%s" value="%s" %s/>""" % (self.base, name, unicode(value), parameters)
+        res+="""<%s name="%s" value="%s" %s/>""" % (self.base, name, str(value), parameters)
         return res
     def isrequired(self, value):
         """Intern method to return an error message in case the value is not provided"""
@@ -168,15 +168,15 @@ class Area(Widget):
     """
     def __init__(self, *lw, **kw):
         super(Area, self).__init__(*lw, **kw)
-        if not kw.has_key('cols'):
+        if 'cols' not in kw:
             self.params['cols']=40
-        if not kw.has_key('rows'):
+        if 'rows' not in kw:
             self.params['rows']=10
         self.base="textarea"
         self.label_attr['class']='bellow'
     def render(self, name, content):
         self._manage_class()
-        parameters=" ".join(['%s="%s"' % (k,v) for k,v in self.params.items()])
+        parameters=" ".join(['%s="%s"' % (k,v) for k,v in list(self.params.items())])
         res=self.getlabel(name)
         if not content:
             content=self.default
@@ -210,9 +210,9 @@ class Check(Widget):
         if self.default or value:
             self.params['checked']="checked"
         else:
-            if self.params.has_key('checked'):
+            if 'checked' in self.params:
                 del self.params['checked']
-        parameters=" ".join(['%s="%s"' % (k,v) for k,v in self.params.items()])
+        parameters=" ".join(['%s="%s"' % (k,v) for k,v in list(self.params.items())])
         res=self.getlabel(name)
         res+="""<%s name="%s" value="1" %s/>""" % (self.base, name, parameters)
         return res
@@ -272,23 +272,23 @@ class Dropdown(Widget):
     def render(self, name, value_selected):
         self._manage_class()
         res=self.getlabel(name)
-        parameters=" ".join(['%s="%s"' % (k,v) for k,v in self.params.items()])
+        parameters=" ".join(['%s="%s"' % (k,v) for k,v in list(self.params.items())])
         res+='<%s name="%s" %s>\n' % (self.base, name, parameters) 
         if not value_selected:
             value_selected=self.default
         for oval, oname in self.options:
-            if unicode(oval) == unicode(value_selected):
+            if str(oval) == str(value_selected):
                 res+='<option value="%s" selected="selected">%s</option>\n' % (oval,oname)
             else:
                 res+='<option value="%s">%s</option>\n' % (oval,oname)
         res+="</select>"
         return res
     def isvalid(self, value):
-        res=super(Dropdown, self).isvalid(unicode(value))
+        res=super(Dropdown, self).isvalid(str(value))
         if self.required:        
-            if unicode(value) not in [unicode(k) for k,e in self.options]:
+            if str(value) not in [str(k) for k,e in self.options]:
                 res.append("Value not in the list")
-            if unicode(value)=="-1":
+            if str(value)=="-1":
                 res.append("Not a valid value")
         return res
 
@@ -391,11 +391,11 @@ class jFile(File):
     def render(self, name, value):
         #the 2 following lines must aways be present
         self._manage_class()
-        parameters=" ".join(['%s="%s"' % (k,v) for k,v in self.params.items()])
+        parameters=" ".join(['%s="%s"' % (k,v) for k,v in list(self.params.items())])
         res=self.getlabel(name)
         if not value:
             value=self.default
-        res+="""<%s name="%s" value="%s" %s/><a id="em"><img src="/static/images/add.png" height="15"/></a> """ % (self.base, name, unicode(value), parameters)
+        res+="""<%s name="%s" value="%s" %s/><a id="em"><img src="/static/images/add.png" height="15"/></a> """ % (self.base, name, str(value), parameters)
         return res
 
 

@@ -13,9 +13,9 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 try:
-    import cStringIO as StringIO
+    import io as StringIO
 except:
-    import StringIO
+    import io
 import gzip
 
 
@@ -30,7 +30,7 @@ class Gzip:
                 else:
                     #this is a stream
                     content = content.read()
-                sio = StringIO.StringIO()
+                sio = io.StringIO()
                 comp_file = gzip.GzipFile(mode='wb', compresslevel=6, fileobj=sio)
                 comp_file.write(content)
                 comp_file.close()
