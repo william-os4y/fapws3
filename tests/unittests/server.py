@@ -22,7 +22,7 @@ def env(environ, start_response):
 
 def hello(environ, start_response):
     start_response('200 OK', [('Content-Type','text/html')])
-    return [b"Hello",b" world!!"]
+    return ["Hello",b" world!!"]
 
 def iteration(environ, start_response):
     start_response('200 OK', [('Content-Type','text/plain')])
