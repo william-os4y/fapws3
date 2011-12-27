@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+
+#try:
+#    from setuptools import setup
+#except ImportError:
+#    from distutils.core import setup
+from distutils.core import setup
+try:  # Python 3
+  from distutils.command.build_py import build_py_2to3 as build_py
+except ImportError:  # Python 2
+  from distutils.command.build_py import build_py
+
+
 from distutils.extension import Extension
 import os
 import sys
@@ -99,7 +107,8 @@ library_dirs.append(res)
 extra_link_args=['-Wl,-R%s' % res]
 
 
-setup(name='fapws3',
+setup(cmdclass = {'build_py': build_py},
+      name='fapws3',
       version="0.10",
       description="Fast Asynchronous Python Web Server",
       long_description=readme,
