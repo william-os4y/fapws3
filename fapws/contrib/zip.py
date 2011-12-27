@@ -12,10 +12,12 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-try:
-    import io as StringIO
-except:
-    import io
+
+
+
+#import cStrinIO
+
+from io import StringIO
 import gzip
 
 
@@ -30,7 +32,7 @@ class Gzip:
                 else:
                     #this is a stream
                     content = content.read()
-                sio = io.StringIO()
+                sio = StringIO()
                 comp_file = gzip.GzipFile(mode='wb', compresslevel=6, fileobj=sio)
                 comp_file.write(content)
                 comp_file.close()

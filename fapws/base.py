@@ -121,7 +121,8 @@ def redirectStdErr():
         write: to insert data
         getvalue; to retreive all data
     """
-    sys.stderr = StringIO.StringIO()
+    sys.stderr = StringIO()
+    return "toto"
 
 supported_HTTP_command = ["GET", "POST", "HEAD", "OPTIONS"]
 
