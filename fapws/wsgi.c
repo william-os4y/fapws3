@@ -415,7 +415,7 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
         }
         return -411;
     }
-    char *content_length_str = PyString_AsString(pydummy);
+    char *content_length_str = PyString_AsChar(pydummy);
     int content_length = atoi(content_length_str);
     pydummy = PyInt_FromString(content_length_str, NULL, 10);
     PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy); 
@@ -446,7 +446,7 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     //no incref because value not needed
     if (pydummy!=NULL)
     {
-        char *ct=PyString_AsString(pydummy);
+        char *ct=PyString_AsChar(pydummy);
         if (strncasecmp(ct, "application/x-www-form-urlencoded", 33)==0) 
         { 
             pydummy=parse_query(cli->input_body);

@@ -14,7 +14,7 @@
 #define PyString_FromFormat PyUnicode_FromFormat
 #define PyInt_FromString PyLong_FromString
 #define PyInt_FromLong PyLong_FromLong
-#define PyString_Concat PyUnicode_Concat
+#define PyString_Concat PyBytes_Concat
 #define PyBuffer_FromMemory PyBytes_FromStringAndSize
 #define PyObject_AsReadBuffer PyBytes_AsStringAndSize
 #endif 

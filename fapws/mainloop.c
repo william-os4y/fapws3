@@ -35,6 +35,9 @@ char * VERSION;
 PyObject *py_generic_cb; 
 char * date_format;
 
+
+
+#if PY_MAJOR_VERSION >= 3
 /* 
 For PYthon3 compatibility 
 */
@@ -51,16 +54,22 @@ FILE *PyFile_AsFile(PyObject *pfd)
    fp = fdopen(fd, "r");
    return fp;
 }
+#endif
 
 char *PyString_AsChar(PyObject *pyobj)
 {
    
+#if PY_MAJOR_VERSION >= 3
    PyObject *pydummy = PyUnicode_AsEncodedString(pyobj, "utf-8", "Error"); 
    char *buf = PyBytes_AsString(pydummy); 
    Py_DECREF(pydummy);
+   PyObject_Print(pyobj,stdout,1);printf("\n");
+   printf("BUFFER:%s\n", buf);
+#else
+   char *buf = PyString_AsString(pyobj); 
+#endif
    return buf;
 }
-
 
 
 
@@ -269,17 +278,23 @@ int python_handler(struct client *cli)
     if (strcmp(cli->cmd,"OPTIONS")==0)
     {
         pydummy=PyString_FromFormat("HTTP/1.0 200 OK\r\nServer: %s\r\nAllow: ", VERSION) ;
+        printf("pydummy:%o\n", pydummy);
         PyObject *pyitem; 
         int index, max;
         max = PyList_Size(pysupportedhttpcmd);
         for (index=0; index<max; index++)
         {
             pyitem=PyList_GetItem(pysupportedhttpcmd, index);  // no need to decref pyitem
-            PyString_Concat(&pydummy, PyObject_Str(pyitem));
+            //PyString_Concat(&pydummy, PyObject_Str(pyitem));
+            PyString_Concat(&pydummy, pyitem);
+            printf("pydummy:%o\n", pydummy);
+            PyObject_Print(PyObject_Type(pyitem), stdout, 1);
             if (index<max-1)
                PyString_Concat(&pydummy, PyString_FromString(", "));
         }
         PyString_Concat(&pydummy, PyString_FromString("\r\nContent-Length: 0\r\n\r\n"));
+        printf("pydummy:%o\n", pydummy);
+        PyObject_Print(pydummy, stdout, 1);
         strcpy(cli->response_header,PyString_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         cli->response_content=PyList_New(0);
@@ -343,7 +358,7 @@ int python_handler(struct client *cli)
     
     // 8) execute python callbacks with his parameters
     PyObject *pyarglist = Py_BuildValue("(OO)", pyenviron, pystart_response );
-    cli->response_content = PyObject_CallObject(cli->wsgi_cb,pyarglist);
+    cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
     Py_DECREF(pyarglist);
     if (cli->response_content!=NULL) 
     {
@@ -376,9 +391,8 @@ int python_handler(struct client *cli)
         if (PyErr_Occurred()) 
         { 
              //get_traceback();py_b
-             //PyObject *pyerrormsg_method=PyObject_GetAttrString(py_base_module,"redirectStdErr");
-             PyObject *pyerrormsg_method=PyObject_CallMethod(py_base_module,"redirectStdErr",NULL);
-             //PyObject *pyerrormsg=PyObject_CallMethod(pyerrormsg_method, NULL);
+             PyObject *pyerrormsg_method=PyObject_GetAttrString(py_base_module,"redirectStdErr");
+             PyObject *pyerrormsg=PyObject_CallFunction(pyerrormsg_method, NULL);
              Py_DECREF(pyerrormsg_method);
              //Py_DECREF(pyerrormsg);
              PyErr_Print();
@@ -548,13 +562,28 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             {
                 PyObject *pydummy = tuple ? PyTuple_GetItem(cli->response_content, cli->response_iter_sent) : PyList_GetItem(cli->response_content, cli->response_iter_sent);
                 char *buff;
+                int res_trsf = 0;
 #if (PY_VERSION_HEX < 0x02050000)
                 int buflen;
-                if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
+                res_trsf = PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen);
+#elif PY_MAJOR_VERSION >= 3
+                Py_ssize_t buflen;
+                if (!PyBytes_Check(pydummy))
+                //we have to transform the object into a Bytes object
+                {
+                    PyObject *pydummy2 = PyUnicode_AsUTF8String(pydummy);
+                    res_trsf = PyBytes_AsStringAndSize(pydummy2, (const void **) &buff, &buflen);
+                    Py_DECREF(pydummy2);
+                }
+                else
+                { 
+                    res_trsf = PyBytes_AsStringAndSize(pydummy, (const void **) &buff, &buflen);
+                }
 #else
                 Py_ssize_t buflen;
-                if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
+                res_trsf = PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen);
 #endif
+                if (res_trsf==0)
                 {
                     // if this is a readable buffer, we send it. Other else, we ignore it.
                     if (write_cli(cli, buff, buflen, revents)==0)
