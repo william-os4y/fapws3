@@ -15,29 +15,29 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import datetime
-from Cookie import SimpleCookie, CookieError
+from http.cookies import SimpleCookie, CookieError
 try:
     import cStringIO as StringIO
 except ImportError:
-    import StringIO
+    from io import StringIO
 import sys
 import string
 import traceback
 import time
-import httplib
+import http
 
 from fapws import config
 from fapws.contrib import multipart
 
 
 def get_status(code):
-    return "%s %s" % (code, httplib.responses[code])
+    return "%s %s" % (code, http.client.responses[code])
 
 
 class Environ(dict):
     def __init__(self, *arg, **kw):
         self['wsgi.version'] = (1, 0)
-        self['wsgi.errors'] = StringIO.StringIO()
+        self['wsgi.errors'] = StringIO()
         self['wsgi.input'] = multipart.MultipartFormData("/tmp/")
         self['wsgi.multithread'] = False
         self['wsgi.multiprocess'] = True
