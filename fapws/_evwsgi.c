@@ -465,9 +465,8 @@ PyInit__evwsgi(void)
     m = Py_InitModule("_evwsgi", EvhttpMethods);
 #endif
 
-// TODO: check the translation to python3 for the following lines    
-    //ServerError = PyErr_NewException("_evwsgi.error", NULL, NULL);
-    //Py_INCREF(ServerError);
-    //PyModule_AddObject(m, "error", ServerError);
+    ServerError = PyErr_NewException("_evwsgi.error", NULL, NULL);
+    Py_INCREF(ServerError);
+    PyModule_AddObject(m, "error", ServerError);
     return m;
 }
