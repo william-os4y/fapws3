@@ -447,6 +447,7 @@ static PyMethodDef evwsgiMethods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
  
+#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef evwsgiModule = {
     PyModuleDef_HEAD_INIT,
     "_evwsgi",
@@ -454,15 +455,20 @@ static struct PyModuleDef evwsgiModule = {
     -1,
     evwsgiMethods
 }; 
+#endif
 
 PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
 PyInit__evwsgi(void)
+#else
+init_evwsgi(void)
+#endif
 {
     PyObject *m;
 #if PY_MAJOR_VERSION >= 3
     m = PyModule_Create(&evwsgiModule);
 #else
-    m = Py_InitModule("_evwsgi", EvhttpMethods);
+    m = Py_InitModule("_evwsgi", evwsgiMethods);
 #endif
 
     ServerError = PyErr_NewException("_evwsgi.error", NULL, NULL);
