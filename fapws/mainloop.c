@@ -58,8 +58,6 @@ char *PyString_AsChar(PyObject *pyobj)
    PyObject *pydummy = PyUnicode_AsEncodedString(pyobj, "utf-8", "Error"); 
    char *buf = PyBytes_AsString(pydummy); 
    Py_DECREF(pydummy);
-   PyObject_Print(pyobj,stdout,1);printf("\n");
-   printf("BUFFER:%s\n", buf);
    return buf;
 }
 
@@ -258,8 +256,6 @@ int python_handler(struct client *cli)
     PyObject *pysupportedhttpcmd = PyObject_GetAttrString(py_base_module, "supported_HTTP_command");
     if (cli->cmd==NULL) pydummy=Py_None; 
     else pydummy = PyString_FromString(cli->cmd);
-    PyObject_Print(pydummy,stdout, 1); printf("\n");
-    PyObject_Print(pysupportedhttpcmd,stdout, 1); printf("\n");
     if (PySequence_Contains(pysupportedhttpcmd,pydummy)!=1)
     {
         //return not implemented 
@@ -347,16 +343,17 @@ int python_handler(struct client *cli)
     
     // 8) execute python callbacks with his parameters
     PyObject *pyarglist = Py_BuildValue("(OO)", pyenviron, pystart_response );
-    cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
+    cli->response_content = PyObject_CallObject(cli->wsgi_cb,pyarglist);
+    Py_DECREF(pyarglist);
     if (cli->response_content!=NULL) 
     {
+        printf("RESULT IS NOT NULL\n");
         if ((PyFile_Check(cli->response_content)==0) && (PyIter_Check(cli->response_content)==1)) {
             //This is an Iterator object. We have to execute it first
             cli->response_content_obj = cli->response_content;
             cli->response_content = PyIter_Next(cli->response_content_obj);
         }
     }
-    Py_DECREF(pyarglist);
     Py_XDECREF(cli->wsgi_cb);
     if (cli->response_content!=NULL) 
     {
@@ -379,10 +376,11 @@ int python_handler(struct client *cli)
         if (PyErr_Occurred()) 
         { 
              //get_traceback();py_b
-             PyObject *pyerrormsg_method=PyObject_GetAttrString(py_base_module,"redirectStdErr");
-             PyObject *pyerrormsg=PyObject_CallFunction(pyerrormsg_method, NULL);
+             //PyObject *pyerrormsg_method=PyObject_GetAttrString(py_base_module,"redirectStdErr");
+             PyObject *pyerrormsg_method=PyObject_CallMethod(py_base_module,"redirectStdErr",NULL);
+             //PyObject *pyerrormsg=PyObject_CallMethod(pyerrormsg_method, NULL);
              Py_DECREF(pyerrormsg_method);
-             Py_DECREF(pyerrormsg);
+             //Py_DECREF(pyerrormsg);
              PyErr_Print();
              PyObject *pysys=PyObject_GetAttrString(py_base_module,"sys");
              PyObject *pystderr=PyObject_GetAttrString(pysys,"stderr");
@@ -501,7 +499,6 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     { 
         //we must send an header or an error
         ret=python_handler(cli); //look for python callback and execute it
-        printf("Python Handler result: %i\n", ret);
         if (ret==0) //look for python callback and execute it
         {
             //uri not found
@@ -556,8 +553,6 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
 #else
                 Py_ssize_t buflen;
-                printf("tuple\n");
-                PyObject_Print(PyObject_Type(pydummy),stdout, 1);
                 if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
 #endif
                 {
@@ -569,7 +564,11 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 }
                 else
                 {
-                    printf("The item %i of your list is not a string!!!!  It will be skipped\n",cli->response_iter_sent);
+#if PY_MAJOR_VERSION >= 3
+                   printf("The item %i of your list is not a bytes!!!!  It will be skipped\n",cli->response_iter_sent);
+#else
+                   printf("The item %i of your list is not a string!!!!  It will be skipped\n",cli->response_iter_sent);
+#endif
                 }            }
             else // all iterations has been sent
             {
