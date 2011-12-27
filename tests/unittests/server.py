@@ -10,35 +10,36 @@ import mybase
 
 
 def env(environ, start_response):
-    print(environ)
     start_response('200 OK', [('Content-Type','text/html')])
     res=[]
+    print("PY env",environ)
     for key,val in environ.items():
         val=str(val).replace('\r','\\r')
         val=val.replace('\n','\\n')
-        res.append("%s:%s\n" % (key,val))
+        res.append(bytes("%s:%s\n" % (key,val),"utf-8"))
+    print("PY RES:%s" % res)
     return res
 
 def hello(environ, start_response):
     start_response('200 OK', [('Content-Type','text/html')])
-    return [b"Hello"," world!!"]
+    return [b"Hello",b" world!!"]
 
 def iteration(environ, start_response):
     start_response('200 OK', [('Content-Type','text/plain')])
-    yield "Hello"
-    yield " "
-    yield "world!!"
+    yield b"Hello"
+    yield b" "
+    yield b"world!!"
 
 def tuplehello(environ, start_response):
     start_response('200 OK', [('Content-Type','text/html')])
-    return ("Hello"," world!!")
+    return (b"Hello",b" world!!")
 
 @log.Log()
 def staticlong(environ, start_response):
     try:
         f=open("long.txt", "rb")
     except:
-        f=["Page not found"]
+        f=[b"Page not found"]
     start_response('200 OK', [('Content-Type','text/html')])
     return f
 
@@ -46,7 +47,7 @@ def embedlong(environ, start_response):
     try:
         c=open("long.txt", "rb").read()
     except:
-        c=["Page not found"]
+        c=[b"Page not found"]
     start_response('200 OK', [('Content-Type','text/html')])
     return base.split_len(c,32768)
 
@@ -63,20 +64,20 @@ def testpost(environ, start_response):
         res=environ["fapws.params"]
     else:
         res={}
-    return ["OK. params are:%s" % (res)]
+    return [bytes("OK. params are:%s" % (res),"utf-8")]
 
 @zip.Gzip()    
 def staticlongzipped(environ, start_response):
     try:
         f=open("long.txt", "rb")
     except:
-        f=["Page not found"]
+        f=[b"Page not found"]
     start_response('200 OK', [('Content-Type','text/html')])
     return f
 
 def badscript(environ, start_response):
     start_reponse('200 OK', [('Content-Type','text/html')])
-    return ["Hello world!!"]
+    return [b"Hello world!!"]
 
 
 
