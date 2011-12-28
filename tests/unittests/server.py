@@ -29,6 +29,13 @@ def hello(environ, start_response):
     start_response('200 OK', [('Content-Type','text/html')])
     return ["Hello"," world!!"]
 
+class helloclass(object):
+    def __init__(self, txt=None):
+        self.content = ["Hello from class %s" % txt]
+    def __call__(self, environ, start_response):
+        start_response('200 OK', [('Content-Type','text/html')])
+        return self.content
+
 def iteration(environ, start_response):
     start_response('200 OK', [('Content-Type','text/plain')])
     yield "Hello"
@@ -96,6 +103,7 @@ def start():
     
  
     evwsgi.wsgi_cb(("/env", env))
+    evwsgi.wsgi_cb(("/helloclass", helloclass("!!!")))
     evwsgi.wsgi_cb(("/hello", hello))
     evwsgi.wsgi_cb(("/tuplehello", tuplehello))
     evwsgi.wsgi_cb(("/iterhello", iteration))

@@ -87,6 +87,12 @@ if 1:
   content=response.read()
   test("Hello world!!", response.status==200, content)
 
+  print "=== Get Class Hello world ==="
+  con.request("GET", "/helloclass")
+  response=con.getresponse()
+  content=response.read()
+  test("Hello from class !!!", response.status==200, content)
+
   print "=== Get long file ==="
   con.request("GET", "/long")
   response=con.getresponse()
