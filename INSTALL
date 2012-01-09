@@ -27,7 +27,7 @@ For MacOSX users
 
  or
 
-  Build libev for multi-architecture:
+  If you have homebrew build libev for multi-architecture:
   $ brew edit libev
   add:
   ENV["CFLAGS"] = '-arch i386 -arch x86_64'
