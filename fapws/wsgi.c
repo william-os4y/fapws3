@@ -9,9 +9,9 @@
 #include "common.h"
 #include "wsgi.h"
 
-char *server_name;
-char *server_port;
-int debug;
+extern char *server_name;
+extern char *server_port;
+extern int debug;
 
 /*
 This procdure analyse uri and return a Python dictionary with every parameters as keys and their associated values into a list. 

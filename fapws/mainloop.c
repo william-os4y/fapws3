@@ -23,17 +23,17 @@
 #include "wsgi.h"
 #include "mainloop.h"
 
-int debug;
-PyObject *pydeferqueue; 
-PyObject *py_base_module;  //to store the fapws.base python module
-PyObject *py_config_module; //to store the fapws.config module
-PyObject *py_registered_uri; //list containing the uri registered and their associated wsgi callback.
+extern int debug;
+extern PyObject *pydeferqueue; 
+extern PyObject *py_base_module;  //to store the fapws.base python module
+extern PyObject *py_config_module; //to store the fapws.config module
+extern PyObject *py_registered_uri; //list containing the uri registered and their associated wsgi callback.
 #define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 9   //number of connection retry
 
-char * VERSION;
-PyObject *py_generic_cb; 
-char * date_format;
+extern char * VERSION;
+extern PyObject *py_generic_cb; 
+extern char * date_format;
 
 
 
