@@ -24,6 +24,18 @@ For MacOSX users
 
 - Install MacPorts from http://www.macports.org/
 - Run "sudo port install libev"
+
+ or
+
+  Build libev for multi-architecture:
+  $ brew edit libev
+  add:
+  ENV["CFLAGS"] = '-arch i386 -arch x86_64'
+  just above the line:
+  system "./configure", "--disable-dependency-tracking",
+  run
+  brew install libev
+
 - than follow the Fapws3 installation process described here under
 
 
