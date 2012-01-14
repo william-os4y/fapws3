@@ -67,15 +67,15 @@ class Start_response:
         self.status_code = str(self.status_code)
         for key, val in response_headers:
             #if type(key)!=type(""):
-            key = bytes(key)
+            key = bytes(key,'utf8')
             #if type(val)!=type(""):
-            val = bytes(val)
+            val = bytes(val,'utf8')
             self.response_headers[key] = val
         self.exc_info = exc_info  # TODO: to implement
 
     def add_header(self, key, val):
-        key = bytes(key)
-        val = bytes(val)
+        key = bytes(key,'utf8')
+        val = bytes(val,'utf8')
         self.response_headers[key] = val
 
     def set_cookie(self, key, value='', max_age=None, expires=None, path='/', domain=None, secure=None):
