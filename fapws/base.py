@@ -53,8 +53,8 @@ class Environ(dict):
 
 class Start_response:
     def __init__(self):
-        self.status_code = "200"
-        self.status_reasons = "OK"
+        self.status_code = b"200"
+        self.status_reasons = b"OK"
         self.response_headers = {}
         self.exc_info = None
         self.cookies = None
@@ -63,19 +63,19 @@ class Start_response:
         self.sent = False
 
     def __call__(self, status, response_headers, exc_info=None):
-        self.status_code, self.status_reasons = status.split(" ", 1)
+        self.status_code, self.status_reasons = status.split(b" ", 1)
         self.status_code = str(self.status_code)
         for key, val in response_headers:
             #if type(key)!=type(""):
-            key = str(key)
+            key = bytes(key)
             #if type(val)!=type(""):
-            val = str(val)
+            val = bytes(val)
             self.response_headers[key] = val
         self.exc_info = exc_info  # TODO: to implement
 
     def add_header(self, key, val):
-        key = str(key)
-        val = str(val)
+        key = bytes(key)
+        val = bytes(val)
         self.response_headers[key] = val
 
     def set_cookie(self, key, value='', max_age=None, expires=None, path='/', domain=None, secure=None):
@@ -83,34 +83,34 @@ class Start_response:
             self.cookies = SimpleCookie()
         self.cookies[key] = value
         if max_age:
-            self.cookies[key]['max-age'] = max_age
+            self.cookies[key][b'max-age'] = max_age
         if expires:
             if isinstance(expires, str):
-                self.cookies[key]['expires'] = expires
+                self.cookies[key][b'expires'] = expires
             elif isinstance(expires, datetime.datetime):
                 expires = evwsgi.rfc1123_date(time.mktime(expires.timetuple()))
             else:
-                raise CookieError('expires must be a datetime object or a string')
-            self.cookies[key]['expires'] = expires
+                raise CookieError(b'expires must be a datetime object or a string')
+            self.cookies[key][b'expires'] = expires
         if path:
-            self.cookies[key]['path'] = path
+            self.cookies[key][b'path'] = path
         if domain:
-            self.cookies[key]['domain'] = domain
+            self.cookies[key][b'domain'] = domain
         if secure:
-            self.cookies[key]['secure'] = secure
+            self.cookies[key][b'secure'] = secure
 
     def delete_cookie(self, key):
         if self.cookies:
-            self.cookies[key] = ''
-        self.cookies[key]['max-age'] = "0"
+            self.cookies[key] = b''
+        self.cookies[key][b'max-age'] = b"0"
 
     def __str__(self):
-        res = "HTTP/1.0 %s %s\r\n" % (self.status_code, self.status_reasons)
+        res = b"HTTP/1.0 %s %s\r\n" % (self.status_code, self.status_reasons)
         for key, val in list(self.response_headers.items()):
-            res += '%s: %s\r\n' % (key, val)
+            res += b'%s: %s\r\n' % (key, val)
         if self.cookies:
-            res += str(self.cookies) + "\r\n"
-        res += "\r\n"
+            res += str(self.cookies) + b"\r\n"
+        res += b"\r\n"
         return res
 
 
@@ -124,7 +124,7 @@ def redirectStdErr():
     sys.stderr = StringIO()
     return "toto"
 
-supported_HTTP_command = ["GET", "POST", "HEAD", "OPTIONS"]
+supported_HTTP_command = [b"GET", b"POST", b"HEAD", b"OPTIONS"]
 
 
 def split_len(seq, length):
@@ -132,7 +132,7 @@ def split_len(seq, length):
 
 def parse_cookies(environ):
     #transform the cookie environment into a SimpleCokkie object
-    line = environ.get('HTTP_COOKIE', None)
+    line = environ.get(b'HTTP_COOKIE', None)
     if line:
         cook = SimpleCookie()
         cook.load(line)

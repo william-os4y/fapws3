@@ -9,9 +9,9 @@
 
 #define IS_PY3K
 #define PyString_AsString PyBytes_AsString
-#define PyString_FromString PyUnicode_FromString
-#define PyString_FromStringAndSize PyUnicode_FromStringAndSize
-#define PyString_FromFormat PyUnicode_FromFormat
+#define PyString_FromString PyBytes_FromString
+#define PyString_FromStringAndSize PyBytes_FromStringAndSize
+#define PyString_FromFormat PyBytes_FromFormat
 #define PyInt_FromString PyLong_FromString
 #define PyInt_FromLong PyLong_FromLong
 #define PyString_Concat PyBytes_Concat

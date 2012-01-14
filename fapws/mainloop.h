@@ -24,3 +24,4 @@ void sigint_cb(struct ev_loop *loop, ev_signal *w, int revents);
 void sigterm_cb(struct ev_loop *loop, ev_signal *w, int revents);
 
 void sigpipe_cb(struct ev_loop *loop, ev_signal *w, int revents);
+

@@ -22,7 +22,7 @@ def env(environ, start_response):
 
 def hello(environ, start_response):
     start_response('200 OK', [('Content-Type','text/html')])
-    return ["Hello",b" world!!"]
+    return [b"Hello",b" world!!"]
 
 def iteration(environ, start_response):
     start_response('200 OK', [('Content-Type','text/plain')])
@@ -100,7 +100,7 @@ def start():
     evwsgi.wsgi_cb(("/testpost", testpost))
     evwsgi.wsgi_cb(("/badscript", badscript))
 
-    evwsgi.set_debug(0)    
+    evwsgi.set_debug(1)    
     evwsgi.run()
     
 

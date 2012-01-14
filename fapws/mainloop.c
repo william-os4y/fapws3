@@ -22,6 +22,7 @@
 #include "extra.h"
 #include "wsgi.h"
 #include "mainloop.h"
+#include "compat.h"
 
 int debug;
 PyObject *pydeferqueue; 
@@ -34,42 +35,6 @@ PyObject *py_registered_uri; //list containing the uri registered and their asso
 char * VERSION;
 PyObject *py_generic_cb; 
 char * date_format;
-
-
-
-#if PY_MAJOR_VERSION >= 3
-/* 
-For PYthon3 compatibility 
-*/
-extern PyTypeObject PyIOBase_Type;
-int PyFile_Check(PyObject *obj) 
-{
-    return PyObject_IsInstance(obj, (PyObject *)&PyIOBase_Type);
-}
-
-FILE *PyFile_AsFile(PyObject *pfd)
-{
-   FILE *fp;
-   int fd = PyObject_AsFileDescriptor(pfd);
-   fp = fdopen(fd, "r");
-   return fp;
-}
-#endif
-
-char *PyString_AsChar(PyObject *pyobj)
-{
-   
-#if PY_MAJOR_VERSION >= 3
-   PyObject *pydummy = PyUnicode_AsEncodedString(pyobj, "utf-8", "Error"); 
-   char *buf = PyBytes_AsString(pydummy); 
-   Py_DECREF(pydummy);
-   PyObject_Print(pyobj,stdout,1);printf("\n");
-   printf("BUFFER:%s\n", buf);
-#else
-   char *buf = PyString_AsString(pyobj); 
-#endif
-   return buf;
-}
 
 
 
@@ -209,7 +174,7 @@ int handle_uri(struct client *cli)
         py_uri =PyTuple_GetItem(py_item,0);
         wsgi_cb = PyTuple_GetItem(py_item,1);
         Py_INCREF(wsgi_cb); //because of GetItem RTFM
-        uri=PyString_AsChar(py_uri);
+        uri=PyBytes_AsChar(py_uri);
         res=strncmp(uri, cli->uri, strlen(uri));
         if (res==0)
         {
@@ -264,7 +229,7 @@ int python_handler(struct client *cli)
     //  2bis) we check if the request method is supported
     PyObject *pysupportedhttpcmd = PyObject_GetAttrString(py_base_module, "supported_HTTP_command");
     if (cli->cmd==NULL) pydummy=Py_None; 
-    else pydummy = PyString_FromString(cli->cmd);
+    else pydummy = PyBytes_FromChar(cli->cmd);
     if (PySequence_Contains(pysupportedhttpcmd,pydummy)!=1)
     {
         //return not implemented 
@@ -290,12 +255,12 @@ int python_handler(struct client *cli)
             printf("pydummy:%o\n", pydummy);
             PyObject_Print(PyObject_Type(pyitem), stdout, 1);
             if (index<max-1)
-               PyString_Concat(&pydummy, PyString_FromString(", "));
+               PyString_Concat(&pydummy, PyBytes_FromChar(", "));
         }
-        PyString_Concat(&pydummy, PyString_FromString("\r\nContent-Length: 0\r\n\r\n"));
+        PyString_Concat(&pydummy, PyBytes_FromChar("\r\nContent-Length: 0\r\n\r\n"));
         printf("pydummy:%o\n", pydummy);
         PyObject_Print(pydummy, stdout, 1);
-        strcpy(cli->response_header,PyString_AsChar(pydummy));
+        strcpy(cli->response_header,PyBytes_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         cli->response_content=PyList_New(0);
         Py_DECREF(pyenviron);
@@ -347,13 +312,13 @@ int python_handler(struct client *cli)
     PyObject *py_response_header=PyObject_GetAttrString(pystart_response,"response_headers");
     char *sftime;
     sftime=cur_time_rfc1123();
-    pydummy = PyString_FromString(sftime);
-    PyDict_SetItemString(py_response_header, "Date", pydummy);
+    pydummy = PyBytes_FromChar(sftime);
+    PyDict_SetItemChar(py_response_header, "Date", pydummy);
     Py_DECREF(pydummy);
     Py_DECREF(py_response_header);
     free(sftime);
-    pydummy = PyString_FromString(VERSION);
-    PyDict_SetItemString(py_response_header, "Server", pydummy);
+    pydummy = PyBytes_FromChar(VERSION);
+    PyDict_SetItemChar(py_response_header, "Server", pydummy);
     Py_DECREF(pydummy);
     
     // 8) execute python callbacks with his parameters
@@ -373,7 +338,7 @@ int python_handler(struct client *cli)
     if (cli->response_content!=NULL) 
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
-        strcpy(cli->response_header,PyString_AsChar(pydummy));
+        strcpy(cli->response_header,PyBytes_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         Py_DECREF(pydummy);
     }
@@ -407,16 +372,16 @@ int python_handler(struct client *cli)
              Py_DECREF(pystderr);
              PyObject *pyres=PyObject_CallFunction(pygetvalue, NULL);
              Py_DECREF(pygetvalue);
-             printf("%s\n", PyString_AsChar(pyres));
+             printf("%s\n", PyBytes_AsChar(pyres));
              //test if we must send it to the page
              PyObject *pysendtraceback = PyObject_GetAttrString(py_config_module,"send_traceback_to_browser");
              cli->response_content=PyList_New(0);
              if (pysendtraceback==Py_True) {
-                pydummy = PyString_FromString("<h1>Error</h1><pre>");
+                pydummy = PyBytes_FromChar("<h1>Error</h1><pre>");
                 PyList_Append(cli->response_content, pydummy );
                 Py_DECREF(pydummy);
                 PyList_Append(cli->response_content, pyres);
-                pydummy = PyString_FromString("</pre>");
+                pydummy = PyBytes_FromChar("</pre>");
                 PyList_Append(cli->response_content, pydummy);
                 Py_DECREF(pydummy);
              } else {
@@ -430,7 +395,7 @@ int python_handler(struct client *cli)
          else 
          {
              cli->response_content=PyList_New(0);
-             pydummy = PyString_FromString("Page not found.");
+             pydummy = PyBytes_FromChar("Page not found.");
              PyList_Append(cli->response_content, pydummy );
              Py_DECREF(pydummy);
          }

@@ -40,6 +40,7 @@
 #include "mainloop.h"
 #include "wsgi.h"
 #include "extra.h"
+#include "compat.h"
 
 
 /*
@@ -210,23 +211,12 @@ static PyObject *py_set_base_module(PyObject *self, PyObject *args)
 
     //Get the version from the config.py file
     PyObject *pyver=PyObject_GetAttrString(py_config_module,"SERVER_IDENT");
-#if PY_MAJOR_VERSION >= 3
-    PyObject *pydummy_bytes;
-    if (PyUnicode_FSConverter(pyver, &pydummy_bytes))
-         VERSION = PyBytes_AsString(pydummy_bytes);
-#else
     VERSION = PyString_AsString(pyver);
-#endif
     printf("VERSION: %s\n", VERSION);
  
     //get the date format
     PyObject *pydateformat=PyObject_GetAttrString(py_config_module,"date_format");
-#if PY_MAJOR_VERSION >= 3
-    if (PyUnicode_FSConverter(pydateformat, &pydummy_bytes))
-         date_format=PyBytes_AsString(pydummy_bytes);
-#else
     date_format=PyString_AsString(pydateformat);
-#endif
     printf("Date Format: %s\n", date_format);
     
     return Py_None;    
@@ -422,7 +412,7 @@ PyObject *py_rfc1123_date(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "L", &t))
         return NULL;
     rfc_string = time_rfc1123(t);
-    result = PyString_FromString(rfc_string);
+    result = PyBytes_FromChar(rfc_string);
     free(rfc_string);
     return result;
 }
