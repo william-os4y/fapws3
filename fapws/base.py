@@ -32,13 +32,13 @@ def get_status(code):
 
 class Environ(dict):
     def __init__(self, *arg, **kw):
-        self['wsgi.version'] = (1, 0)
-        self['wsgi.errors'] = StringIO()
-        self['wsgi.input'] = StringIO()
-        self['wsgi.multithread'] = False
-        self['wsgi.multiprocess'] = True
-        self['wsgi.run_once'] = False
-        self['fapws.params'] = {}
+        self[b'wsgi.version'] = (1, 0)
+        self[b'wsgi.errors'] = StringIO()
+        self[b'wsgi.input'] = StringIO()
+        self[b'wsgi.multithread'] = False
+        self[b'wsgi.multiprocess'] = True
+        self[b'wsgi.run_once'] = False
+        self[b'fapws.params'] = {}
     #here after some entry point before the Environ update
 
     def update_headers(self, data):
