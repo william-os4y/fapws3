@@ -106,11 +106,10 @@ if 1:
   params = urllib.parse.urlencode({'var1': 'value1', 'var2': 'value2'})
   headers = {"Content-type": "application/x-www-form-urlencoded", 
             "Accept": "text/plain"}
-  print("TTEST:",params, headers)
   con.request("POST", "/testpost", params, headers) #in this case httplib send automatically the content-length header
   response=con.getresponse()
   content=response.read()
-  test(b"OK. params are:{'var1': ['value1'], 'var2': ['value2']}", response.status==200, content)
+  test(b"OK. params are:{b'var1': [b'value1'], b'var2': [b'value2']}", response.status==200, content)
 
   if pycurl:
     print("=== Post with multipart ===")
@@ -147,52 +146,52 @@ if 1:
   con.request("GET", "/env", "", headers)
   response=con.getresponse()
   content=response.read()
-  test("HTTP_BADKEY:: Value", response.status==200 , content)
+  test(b"b'HTTP_BADKEY':b': Value'", response.status==200 , content)
 
   print("=== Bad header: key with CR  ===")
   headers={'Bad\nkey': "Value"}
   con.request("GET", "/env", "", headers)
   response=con.getresponse()
   content=response.read()
-  test("KEY:Value", response.status==200 , content)
+  test(b"KEY':b'Value'", response.status==200 , content)
 
   print("=== Bad header: value with CR  ===")
   headers={'Badkey': "Val\nue"}
   con.request("GET", "/env", "", headers)
   response=con.getresponse()
   content=response.read()
-  test("HTTP_BADKEY:Val", response.status==200 , content)
+  test(b"b'HTTP_BADKEY':b'Val", response.status==200 , content)
 
   print("=== Bad header: value with CRLF  ===")
   headers={'Badkey': "Val\r\nue"}
   con.request("GET", "/env", "", headers)
   response=con.getresponse()
   content=response.read()
-  test("HTTP_BADKEY:Val", response.status==200 , content)
+  test(b"b'HTTP_BADKEY':b'Val", response.status==200 , content)
 
   print("=== Bad command  ===")
   con.request("GIT", "/env")
   response=con.getresponse()
   content=response.read()
-  test("Not Implemented", response.status==501 , content)
+  test(b"Not Implemented", response.status==501 , content)
 
   print("=== Bad first line  ===")
   con.request("GET", "/env\r\n")
   response=con.getresponse()
   content=response.read()
-  test("SCRIPT_NAME:/env", response.status==200 , content)
+  test(b"b'SCRIPT_NAME':b'/env'", response.status==200 , content)
 
   print("=== Bad script  ===")
   con.request("GET", "/badscript")
   response=con.getresponse()
   content=response.read()
-  test("Traceback", response.status==500 , content)
+  test(b"Traceback", response.status==500 , content)
 
   print("=== Bad command ===")
-  con.request("!çàù","")
+  con.request("TOTO","")
   response=con.getresponse()
   content=response.read()
-  test("Not Implemented", response.status==501 , content)
+  test(b"Not Implemented", response.status==501 , content)
   
 
 
