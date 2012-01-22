@@ -15,7 +15,7 @@
 import mimetypes
 import os
 import time
-
+from fapws.compat import convert_to_bytes
 
 class Staticfile:
     """ Generic class that you can use to dispatch static files
@@ -24,12 +24,12 @@ class Staticfile:
       evhttp.http_cb("/static/",static)
     NOTE: you must be consistent between /rootpath/ and /static/ concerning the ending "/"
     """
-    def __init__(self, rootpath="", maxage=None):
+    def __init__(self, rootpath=b"", maxage=None):
         self.rootpath = rootpath
         self.maxage = maxage
 
     def __call__(self, environ, start_response):
-        fpath = self.rootpath + environ['PATH_INFO']
+        fpath = self.rootpath + environ[b'PATH_INFO']
         try:
             f = open(fpath, "rb")
         except:
@@ -37,18 +37,19 @@ class Staticfile:
             start_response('404 File not found', [])
             return []
         fmtime = os.path.getmtime(fpath)
-        if environ.get('HTTP_IF_NONE_MATCH', 'NONE') != str(fmtime):
+        if environ.get(b'HTTP_IF_NONE_MATCH', b'NONE') != convert_to_bytes(fmtime):
             headers = []
             if self.maxage:
-                headers.append(('Cache-control', 'max-age=%s' % int(self.maxage + time.time())))
-            #print "NEW", environ['fapws.uri']
-            ftype = mimetypes.guess_type(fpath)[0]
-            headers.append(('Content-Type', ftype))
-            headers.append(('ETag', fmtime))
-            headers.append(('Content-Length', os.path.getsize(fpath)))
-            start_response('200 OK', headers)
+                headers.append((b'Cache-control', b'max-age=' + convert_to_bytes(int(self.maxage + time.time()))))
+            #print "NEW", environ[b'fapws.uri']
+            print("FPATH", fpath)
+            ftype = mimetypes.guess_type(fpath.decode('utf8'))[0]
+            headers.append((b'Content-Type', convert_to_bytes(ftype)))
+            headers.append((b'ETag', convert_to_bytes(fmtime)))
+            headers.append((b'Content-Length', convert_to_bytes(os.path.getsize(fpath))))
+            start_response(b'200 OK', headers)
             return f
         else:
-            #print "SAME", environ['fapws.uri']
-            start_response('304 Not Modified', [])
+            #print "SAME", environ[b'fapws.uri']
+            start_response(b'304 Not Modified', [])
             return []

@@ -10,7 +10,7 @@ import mybase
 
 
 def env(environ, start_response):
-    start_response('200 OK', [('Content-Type','text/html')])
+    start_response(b'200 OK', [(b'Content-Type',b'text/html')])
     res=[]
     print("PY env",environ)
     for key,val in environ.items():
@@ -21,7 +21,7 @@ def env(environ, start_response):
     return res
 
 def hello(environ, start_response):
-    start_response('200 OK', [('Content-Type','text/html')])
+    start_response(b'200 OK', [(b'Content-Type',b'text/html')])
     return [b"Hello",b" world!!"]
 
 def iteration(environ, start_response):
@@ -31,7 +31,7 @@ def iteration(environ, start_response):
     yield b"world!!"
 
 def tuplehello(environ, start_response):
-    start_response('200 OK', [('Content-Type','text/html')])
+    start_response(b'200 OK', [(b'Content-Type',b'text/html')])
     return (b"Hello",b" world!!")
 
 @log.Log()
@@ -58,13 +58,14 @@ def staticshort(environ, start_response):
 
 def testpost(environ, start_response):
     print(environ)
-    if "multipart/form-data" in environ['HTTP_CONTENT_TYPE']:
-        res=environ["wsgi.input"].getvalue()
-    elif "application/x-www-form-urlencoded" in environ['HTTP_CONTENT_TYPE']:
-        res=environ["fapws.params"]
+    if b"multipart/form-data" in environ[b'HTTP_CONTENT_TYPE']:
+        res=environ[b"wsgi.input"].getvalue()
+    elif b"application/x-www-form-urlencoded" in environ[b'HTTP_CONTENT_TYPE']:
+        res=environ[b"fapws.params"]
     else:
         res={}
-    return [bytes("OK. params are:%s" % (res),"utf-8")]
+    ret = "OK. params are:%s" % (res)
+    return [bytes(ret,"utf-8")]
 
 @zip.Gzip()    
 def staticlongzipped(environ, start_response):
@@ -72,7 +73,7 @@ def staticlongzipped(environ, start_response):
         f=open("long.txt", "rb")
     except:
         f=[b"Page not found"]
-    start_response('200 OK', [('Content-Type','text/html')])
+    start_response(b'200 OK', [(b'Content-Type',b'text/html')])
     return f
 
 def badscript(environ, start_response):
@@ -87,20 +88,20 @@ def start():
     evwsgi.set_base_module(mybase)
     
  
-    evwsgi.wsgi_cb(("/env", env))
-    evwsgi.wsgi_cb(("/hello", hello))
-    evwsgi.wsgi_cb(("/tuplehello", tuplehello))
-    evwsgi.wsgi_cb(("/iterhello", iteration))
-    evwsgi.wsgi_cb(("/longzipped", staticlongzipped))
-    evwsgi.wsgi_cb(("/long", staticlong))
-    evwsgi.wsgi_cb(("/elong", embedlong))
-    evwsgi.wsgi_cb(("/short", staticshort))
-    staticform=views.Staticfile("test.html")
-    evwsgi.wsgi_cb(("/staticform", staticform))
-    evwsgi.wsgi_cb(("/testpost", testpost))
-    evwsgi.wsgi_cb(("/badscript", badscript))
+    evwsgi.wsgi_cb((b"/env", env))
+    evwsgi.wsgi_cb((b"/hello", hello))
+    evwsgi.wsgi_cb((b"/tuplehello", tuplehello))
+    evwsgi.wsgi_cb((b"/iterhello", iteration))
+    evwsgi.wsgi_cb((b"/longzipped", staticlongzipped))
+    evwsgi.wsgi_cb((b"/long", staticlong))
+    evwsgi.wsgi_cb((b"/elong", embedlong))
+    evwsgi.wsgi_cb((b"/short", staticshort))
+    staticform=views.Staticfile(b"test.html")
+    evwsgi.wsgi_cb((b"/staticform", staticform))
+    evwsgi.wsgi_cb((b"/testpost", testpost))
+    evwsgi.wsgi_cb((b"/badscript", badscript))
 
-    evwsgi.set_debug(1)    
+    evwsgi.set_debug(0)    
     evwsgi.run()
     
 

@@ -212,12 +212,10 @@ static PyObject *py_set_base_module(PyObject *self, PyObject *args)
     //Get the version from the config.py file
     PyObject *pyver=PyObject_GetAttrString(py_config_module,"SERVER_IDENT");
     VERSION = PyString_AsString(pyver);
-    printf("VERSION: %s\n", VERSION);
  
     //get the date format
     PyObject *pydateformat=PyObject_GetAttrString(py_config_module,"date_format");
     date_format=PyString_AsString(pydateformat);
-    printf("Date Format: %s\n", date_format);
     
     return Py_None;    
 }

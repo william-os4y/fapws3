@@ -14,7 +14,7 @@
 #
 from django.core.handlers import wsgi
 import django
-
+from fapws.compat import convert_to_bytes
 
 djhand = wsgi.WSGIHandler()
 
@@ -23,9 +23,13 @@ def handler(environ, start_response):
     res = djhand(environ, start_response)
     if django.VERSION[0] == 0:
         for key, val in list(res.headers.items()):
+            key = convert_to_bytes(key)
+            val = convert_to_bytes(val)
             start_response.response_headers[key] = val
     else:
         for key, val in list(res._headers.values()):
+            key = convert_to_bytes(key)
+            val = convert_to_bytes(val)
             start_response.response_headers[key] = val
     start_response.cookies = res.cookies
     return res.content

@@ -206,11 +206,10 @@ PyObject * header_to_dict (struct client *cli)
    PyObject *pyval;
    PyObject *pyheader_key=NULL;
 
-   pyval = Py_BuildValue("s", cli->input_header); 
+   pyval = PyBytes_FromChar(cli->input_header); 
    PyDict_SetItemChar(pydict, "fapws.raw_header", pyval);
    Py_DECREF(pyval);
 
-   
    len=strlen(buf);
    data=malloc(len);
    buf2=malloc(len);
@@ -233,7 +232,7 @@ PyObject * header_to_dict (struct client *cli)
            cli->cmd=malloc(strlen(data)+1);
            assert(cli->cmd);
            strcpy(cli->cmd, data);   // will be cleaned with cli
-           pyval = Py_BuildValue("s",data);
+           pyval = PyBytes_FromChar(data);
            PyDict_SetItemChar(pydict, "REQUEST_METHOD", pyval);
            Py_DECREF(pyval);
          }
@@ -246,7 +245,7 @@ PyObject * header_to_dict (struct client *cli)
            state=s_firstline_w2;
            data[j-1]='\0';
            //printf("PATH:%s***\n",data);
-           pyval = Py_BuildValue("s",data);
+           pyval = PyBytes_FromChar(data);
            PyDict_SetItemChar(pydict, "fapws.uri", pyval);
            Py_DECREF(pyval);
            cli->uri=malloc(strlen(data)+1);
@@ -255,7 +254,7 @@ PyObject * header_to_dict (struct client *cli)
            char *query_string;
            query_string=data+sw_query_string-1;
            //printf("QUERY_STRING:%s***\n", query_string);
-           pyval = Py_BuildValue("s",query_string);
+           pyval = PyBytes_FromChar(query_string);
            PyDict_SetItemChar(pydict, "QUERY_STRING", pyval);
            Py_DECREF(pyval);
            j=0;
@@ -295,7 +294,7 @@ PyObject * header_to_dict (struct client *cli)
            j=0;
            //printf("KEY:%s***\n",data);
            transform_header_key_to_wsgi_key(data, buf2);
-           pyheader_key=Py_BuildValue("s",buf2);
+           pyheader_key=PyBytes_FromChar(buf2);
            
          }
          break;
@@ -307,7 +306,7 @@ PyObject * header_to_dict (struct client *cli)
            data[j-1]='\0';
            j=0;
            //printf("VAL:%s***\n",data);
-           pyval = Py_BuildValue("s",data);
+           pyval = PyBytes_FromChar(data);
            PyDict_SetItem(pydict, pyheader_key, pyval);
            Py_DECREF(pyval);
            Py_DECREF(pyheader_key);
@@ -394,7 +393,7 @@ PyObject *py_get_request_info(struct client *cli)
     PyDict_SetItemChar(pydict, "fapws.remote_addr", pydummy);
     PyDict_SetItemChar(pydict, "REMOTE_ADDR", pydummy);
     Py_DECREF(pydummy);
-    pydummy=Py_BuildValue("H", cli->remote_port);
+    pydummy=Py_BuildValue("H",cli->remote_port);
     PyDict_SetItemChar(pydict, "fapws.remote_port", pydummy);
     Py_DECREF(pydummy);
     return pydict;

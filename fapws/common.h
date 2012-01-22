@@ -17,6 +17,7 @@
 #define PyString_Concat PyBytes_Concat
 #define PyBuffer_FromMemory PyBytes_FromStringAndSize
 #define PyObject_AsReadBuffer PyBytes_AsStringAndSize
+#define PyObject_Str PyObject_Bytes
 #endif 
 
 

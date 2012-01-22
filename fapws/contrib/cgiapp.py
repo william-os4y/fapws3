@@ -14,7 +14,7 @@
 #
 import os
 import subprocess
-
+from fapws.compat import convert_to_bytes
 
 class CGIApplication:
     def __init__(self, script):
@@ -24,28 +24,30 @@ class CGIApplication:
 
     def _setup_cgi_environ(self, environ):
         for key, val in list(environ.items()):
-            if type(val) is str:
-                self.cgi_environ[key] = val
-        self.cgi_environ['REQUEST_URI'] = environ['fapws.uri']
+            if type(val) in (str,bytes):
+                key = convert_to_bytes(key)
+                self.cgi_environ[key] = convert_to_bytes(val)
+        self.cgi_environ[b'REQUEST_URI'] = convert_to_bytes(environ['fapws.uri'])
 
     def _split_return(self, data):
-        if '\n\n' in data:
-            header, content = data.split('\n\n', 1)
+        data = convert_to_bytes(data)
+        if b'\n\n' in data:
+            header, content = data.split(b'\n\n', 1)
         else:
-            header = ""
+            header = b""
             content = data
         return header, content
 
     def _split_header(self, header):
         i = 0
         headers = []
-        firstline = "HTTP/1.1 200 OK"
-        for line in header.split('\n'):
-            if i == 0 and ':' not in line:
+        firstline = b"HTTP/1.1 200 OK"
+        for line in header.split(b'\n'):
+            if i == 0 and b':' not in line:
                 firstline = line
-            if ':' in line:
-                name, value = line.split(':', 1)
-                headers.append((name, value))
+            if b':' in line:
+                name, value = line.split(b':', 1)
+                headers.append((convert_to_bytes(name), convert_to_bytes(value)))
             i += 1
         status = " ".join(firstline.split()[1:])
         return status, headers
@@ -60,9 +62,9 @@ class CGIApplication:
                     env=self.cgi_environ,
                     cwd=self.dirname,
                     )
-        input_len = environ.get('CONTENT_LENGTH', 0)
+        input_len = int(environ.get(b'CONTENT_LENGTH', b'0'))
         if input_len:
-            cgi_input = environ['wsgi.input'].read(input_len)
+            cgi_input = environ[b'wsgi.input'].read(input_len)
         else:
             cgi_input = ""
         #print "cgi input", cgi_input

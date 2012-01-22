@@ -16,7 +16,7 @@
 #
 import datetime
 from http.cookies import SimpleCookie, CookieError
-from io import StringIO
+from io import BytesIO, StringIO
 import sys
 import string
 import traceback
@@ -24,7 +24,7 @@ import time
 
 from fapws import config
 import http
-
+from fapws.compat import convert_to_bytes
 
 def get_status(code):
     return "%s %s" % (code, http.client.responses[code])
@@ -33,8 +33,8 @@ def get_status(code):
 class Environ(dict):
     def __init__(self, *arg, **kw):
         self[b'wsgi.version'] = (1, 0)
-        self[b'wsgi.errors'] = StringIO()
-        self[b'wsgi.input'] = StringIO()
+        self[b'wsgi.errors'] = BytesIO()
+        self[b'wsgi.input'] = BytesIO()
         self[b'wsgi.multithread'] = False
         self[b'wsgi.multiprocess'] = True
         self[b'wsgi.run_once'] = False
@@ -63,34 +63,38 @@ class Start_response:
         self.sent = False
 
     def __call__(self, status, response_headers, exc_info=None):
+        if type(status)!=bytes:
+            status=convert_to_bytes(status)
+            print("Warning!!! Better to have your status as a bytes object")
         self.status_code, self.status_reasons = status.split(b" ", 1)
-        self.status_code = str(self.status_code)
         for key, val in response_headers:
-            #if type(key)!=type(""):
-            key = bytes(key,'utf8')
-            #if type(val)!=type(""):
-            val = bytes(val,'utf8')
+            key=convert_to_bytes(key) 
+            val=convert_to_bytes(val) 
             self.response_headers[key] = val
         self.exc_info = exc_info  # TODO: to implement
 
     def add_header(self, key, val):
-        key = bytes(key,'utf8')
-        val = bytes(val,'utf8')
+        key=convert_to_bytes(key) 
+        val=convert_to_bytes(val) 
         self.response_headers[key] = val
 
-    def set_cookie(self, key, value='', max_age=None, expires=None, path='/', domain=None, secure=None):
+    def set_cookie(self, key, value=b'', max_age=None, expires=None, path=b'/', domain=None, secure=None):
         if not self.cookies:
             self.cookies = SimpleCookie()
+        key = convert_to_bytes(key) 
+        value = convert_to_bytes(value)
         self.cookies[key] = value
         if max_age:
-            self.cookies[key][b'max-age'] = max_age
+            self.cookies[key][b'max-age'] = convert_to_bytes(max_age)
         if expires:
-            if isinstance(expires, str):
+            if isinstance(expires, bytes):
                 self.cookies[key][b'expires'] = expires
+            elif isinstance(expires, str):
+                self.cookies[key][b'expires'] = convert_to_bytes(expires)
             elif isinstance(expires, datetime.datetime):
-                expires = evwsgi.rfc1123_date(time.mktime(expires.timetuple()))
+                expires = convert_to_bytes(evwsgi.rfc1123_date(time.mktime(expires.timetuple())))
             else:
-                raise CookieError(b'expires must be a datetime object or a string')
+                raise CookieError('expires must be a datetime object or a string')
             self.cookies[key][b'expires'] = expires
         if path:
             self.cookies[key][b'path'] = path
@@ -99,20 +103,25 @@ class Start_response:
         if secure:
             self.cookies[key][b'secure'] = secure
 
+
     def delete_cookie(self, key):
+        key = convert_to_bytes(key)
         if self.cookies:
             self.cookies[key] = b''
         self.cookies[key][b'max-age'] = b"0"
 
-    def __str__(self):
-        res = b"HTTP/1.0 %s %s\r\n" % (self.status_code, self.status_reasons)
-        for key, val in list(self.response_headers.items()):
-            res += b'%s: %s\r\n' % (key, val)
+    def _result_(self):
+        res = b"HTTP/1.0 " + self.status_code + b" " + self.status_reasons + b"\r\n"
+        for key, val in self.response_headers.items():
+            res += key + b': ' + val + b'\r\n'
         if self.cookies:
-            res += str(self.cookies) + b"\r\n"
+            res += bytes(self.cookies,'utf8') + b"\r\n"
         res += b"\r\n"
         return res
-
+    def __str__(self):
+        return str(self._result_(),'utf8')
+    def __bytes__(self):
+        return self._result_()
 
 def redirectStdErr():
     """
@@ -122,7 +131,6 @@ def redirectStdErr():
         getvalue; to retreive all data
     """
     sys.stderr = StringIO()
-    return "toto"
 
 supported_HTTP_command = [b"GET", b"POST", b"HEAD", b"OPTIONS"]
 

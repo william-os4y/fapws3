@@ -17,8 +17,9 @@
 
 #import cStrinIO
 
-from io import StringIO
+from io import BytesIO
 import gzip
+from fapws.compat import convert_to_bytes
 
 
 class Gzip:
@@ -26,19 +27,19 @@ class Gzip:
     def __call__(self, f):
         def func(environ, start_response):
             content = f(environ, start_response)
-            if 'gzip' in environ.get('HTTP_ACCEPT_ENCODING', ''):
+            if b'gzip' in environ.get(b'HTTP_ACCEPT_ENCODING', b''):
                 if type(content) is list:
                     content = "".join(content)
                 else:
                     #this is a stream
                     content = content.read()
-                sio = StringIO()
+                sio = BytesIO()
                 comp_file = gzip.GzipFile(mode='wb', compresslevel=6, fileobj=sio)
                 comp_file.write(content)
                 comp_file.close()
-                start_response.add_header('Content-Encoding', 'gzip')
+                start_response.add_header(b'Content-Encoding', b'gzip')
                 res = sio.getvalue()
-                start_response.add_header('Content-Length', len(res))
+                start_response.add_header(b'Content-Length', convert_to_bytes(len(res)))
                 return [res]
             else:
                 return content

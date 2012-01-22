@@ -136,7 +136,7 @@ classifiers=['Development Status :: 4 - Beta','Environment :: Web Environment','
                   library_dirs=library_dirs, 
                   libraries=['ev'],
                   extra_link_args=extra_link_args, #comment this line if you prefer to play with LD_LIBRARY_PATH
-                  #extra_compile_args=["-ggdb"],
+                  extra_compile_args=["-ggdb"],
                   #define_macros=[("DEBUG", "1")],
                   )
                   ]

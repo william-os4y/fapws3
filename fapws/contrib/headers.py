@@ -15,9 +15,9 @@
 
 
 def redirect(start_response, location, permanent=None):
-    header = [('location', location), ('Content-Type', "text/plain")]
+    header = [(b'location', convert_to_bytes(location)), (b'Content-Type', b"text/plain")]
     if permanent:
-        start_response('301 Moved Permanently', header)
+        start_response(b'301 Moved Permanently', header)
     else:
-        start_response('302 Moved Temporarily', header)
+        start_response(b'302 Moved Temporarily', header)
     return []

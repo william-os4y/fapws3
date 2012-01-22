@@ -63,7 +63,7 @@ class MultipartFormData(object):
        Feel free to adapt the self.definefilename. As default, we use the versioning. 
     """
     def __init__(self, basepath="./"):
-        "Just porovide the directory path where the file objects must be stored" 
+        "Just provide the directory path where the file objects must be stored" 
         self.basepath=basepath
         self.results={}
         self.boundary=None
@@ -71,16 +71,18 @@ class MultipartFormData(object):
         self.filerepository=DiskVersioning() #per default we use the versioning method
     def write(self, data):
         #data can be chunk of the input data or all the input data
-        line=""
-        prevchar=""
-        paramkey=""
-        paramvalue=""
+        line=b""
+        prevchar=b""
+        paramkey=b""
+        paramvalue=b""
         paramattr={}
-        content=""
-        for char in data:
+        content=b""
+        data_len = len(data)
+        for pos in range(data_len):
+            char = data[pos:pos+1] 
             line+=char
-            if char=="\n" and prevchar=="\r":
-                if self.boundary==None and line[:2]=="--":
+            if char==b"\n" and prevchar==b"\r":
+                if self.boundary==None and line[:2]==b"--":
                     #we have found a boudary. This will be used for the rest of the parser
                     self.boundary=line.strip()
                 if self.boundary in line:
@@ -96,23 +98,23 @@ class MultipartFormData(object):
                         self.results[paramkey].append(paramvalue)
                         if paramattr:
                             self.results[paramkey].append(paramattr)
-                    content=""
-                    paramvalue=""
+                    content=b""
+                    paramvalue=b""
                     paramattr={}
-                elif line.strip()=="" and self._inheader:
+                elif line.strip()==b"" and self._inheader:
                     self._inheader=False
                 elif self._inheader:
-                    key,val=[x.strip() for x in line.split(':')]
-                    if key=="Content-Disposition" and val[0:10]=="form-data;":
-                        for elem in val[11:].split(';'):
-                            pkey,pval=[x.strip() for x in elem.split('=')]
-                            if pval[0]=='"' and pval[-1]=='"':
+                    key,val=[x.strip() for x in line.split(b':')]
+                    if key==b"Content-Disposition" and val[0:10]==b"form-data;":
+                        for elem in val[11:].split(b';'):
+                            pkey,pval=[x.strip() for x in elem.split(b'=')]
+                            if pval[0]==b'"' and pval[-1]==b'"':
                                 pval=pval[1:-1]
-                            if pkey=="filename":
+                            if pkey==b"filename":
                                 if pval:
                                     self.filerepository.open(self.basepath+pval)
                                     paramvalue=self.filerepository.fpath
-                            elif pkey=="name":
+                            elif pkey==b"name":
                                 paramkey=pval
                             else:
                                 paramattr[pkey]=pval
@@ -123,7 +125,7 @@ class MultipartFormData(object):
                         self.filerepository.write(line)
                     else:
                         content+=line
-                line=""
+                line=b""
             prevchar=char
     def seek(self, position):
         #required for compatibility with file like object

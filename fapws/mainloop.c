@@ -208,12 +208,14 @@ int python_handler(struct client *cli)
     if (!pyenviron_class)
     {
          printf("load Environ failed from base module");
+         PyErr_Print();
          exit(1);
     }
     PyObject *pyenviron=PyObject_CallObject(pyenviron_class, NULL);
     if (!pyenviron)
     {
-         printf("Failed to create an instance of Environ");
+         printf("Failed to create an instance of Environ\n");
+         PyErr_Print();
          exit(1);
     }
     Py_DECREF(pyenviron_class);
@@ -243,7 +245,6 @@ int python_handler(struct client *cli)
     if (strcmp(cli->cmd,"OPTIONS")==0)
     {
         pydummy=PyString_FromFormat("HTTP/1.0 200 OK\r\nServer: %s\r\nAllow: ", VERSION) ;
-        printf("pydummy:%o\n", pydummy);
         PyObject *pyitem; 
         int index, max;
         max = PyList_Size(pysupportedhttpcmd);
@@ -252,14 +253,10 @@ int python_handler(struct client *cli)
             pyitem=PyList_GetItem(pysupportedhttpcmd, index);  // no need to decref pyitem
             //PyString_Concat(&pydummy, PyObject_Str(pyitem));
             PyString_Concat(&pydummy, pyitem);
-            printf("pydummy:%o\n", pydummy);
-            PyObject_Print(PyObject_Type(pyitem), stdout, 1);
             if (index<max-1)
                PyString_Concat(&pydummy, PyBytes_FromChar(", "));
         }
         PyString_Concat(&pydummy, PyBytes_FromChar("\r\nContent-Length: 0\r\n\r\n"));
-        printf("pydummy:%o\n", pydummy);
-        PyObject_Print(pydummy, stdout, 1);
         strcpy(cli->response_header,PyBytes_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         cli->response_content=PyList_New(0);
@@ -308,6 +305,12 @@ int python_handler(struct client *cli)
     PyObject *pystart_response=PyInstance_New(pystart_response_class, NULL, NULL);
 #endif
     Py_DECREF(pystart_response_class);
+    if (!pystart_response)
+    {
+        PyErr_Print();
+        //TODO: return a return code saying that the script is failing
+        exit(1);
+    }
     // 7b) add the current date to the response object
     PyObject *py_response_header=PyObject_GetAttrString(pystart_response,"response_headers");
     char *sftime;
@@ -327,7 +330,6 @@ int python_handler(struct client *cli)
     Py_DECREF(pyarglist);
     if (cli->response_content!=NULL) 
     {
-        printf("RESULT IS NOT NULL\n");
         if ((PyFile_Check(cli->response_content)==0) && (PyIter_Check(cli->response_content)==1)) {
             //This is an Iterator object. We have to execute it first
             cli->response_content_obj = cli->response_content;
@@ -338,6 +340,8 @@ int python_handler(struct client *cli)
     if (cli->response_content!=NULL) 
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
+        char *tt;
+        tt = PyBytes_AsChar(pydummy);
         strcpy(cli->response_header,PyBytes_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         Py_DECREF(pydummy);
