@@ -27,7 +27,7 @@ class Gzip:
     def __call__(self, f):
         def func(environ, start_response):
             content = f(environ, start_response)
-            if b'gzip' in environ.get(b'HTTP_ACCEPT_ENCODING', b''):
+            if b'gzip' in environ.get('HTTP_ACCEPT_ENCODING', b''):
                 if type(content) is list:
                     content = "".join(content)
                 else:

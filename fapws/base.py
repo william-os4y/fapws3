@@ -32,13 +32,13 @@ def get_status(code):
 
 class Environ(dict):
     def __init__(self, *arg, **kw):
-        self[b'wsgi.version'] = (1, 0)
-        self[b'wsgi.errors'] = BytesIO()
-        self[b'wsgi.input'] = BytesIO()
-        self[b'wsgi.multithread'] = False
-        self[b'wsgi.multiprocess'] = True
-        self[b'wsgi.run_once'] = False
-        self[b'fapws.params'] = {}
+        self['wsgi.version'] = (1, 0)
+        self['wsgi.errors'] = BytesIO()
+        self['wsgi.input'] = BytesIO()
+        self['wsgi.multithread'] = False
+        self['wsgi.multiprocess'] = True
+        self['wsgi.run_once'] = False
+        self['fapws.params'] = {}
     #here after some entry point before the Environ update
 
     def update_headers(self, data):
@@ -65,7 +65,6 @@ class Start_response:
     def __call__(self, status, response_headers, exc_info=None):
         if type(status)!=bytes:
             status=convert_to_bytes(status)
-            print("Warning!!! Better to have your status as a bytes object")
         self.status_code, self.status_reasons = status.split(b" ", 1)
         for key, val in response_headers:
             key=convert_to_bytes(key) 

@@ -29,7 +29,7 @@ class Staticfile:
         self.maxage = maxage
 
     def __call__(self, environ, start_response):
-        fpath = self.rootpath + environ[b'PATH_INFO']
+        fpath = self.rootpath + environ['PATH_INFO']
         try:
             f = open(fpath, "rb")
         except:
@@ -37,11 +37,11 @@ class Staticfile:
             start_response('404 File not found', [])
             return []
         fmtime = os.path.getmtime(fpath)
-        if environ.get(b'HTTP_IF_NONE_MATCH', b'NONE') != convert_to_bytes(fmtime):
+        if environ.get('HTTP_IF_NONE_MATCH', b'NONE') != convert_to_bytes(fmtime):
             headers = []
             if self.maxage:
                 headers.append((b'Cache-control', b'max-age=' + convert_to_bytes(int(self.maxage + time.time()))))
-            #print "NEW", environ[b'fapws.uri']
+            #print "NEW", environ['fapws.uri']
             print("FPATH", fpath)
             ftype = mimetypes.guess_type(fpath.decode('utf8'))[0]
             headers.append((b'Content-Type', convert_to_bytes(ftype)))
@@ -50,6 +50,6 @@ class Staticfile:
             start_response(b'200 OK', headers)
             return f
         else:
-            #print "SAME", environ[b'fapws.uri']
+            #print "SAME", environ['fapws.uri']
             start_response(b'304 Not Modified', [])
             return []

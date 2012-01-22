@@ -37,8 +37,8 @@ class Log:
             else:
                 size = b"-"
             #this is provided by a proxy or direct
-            remote_host = environ.get(b'HTTP_X_FORWARDED_FOR', environ[b'fapws.remote_addr'])
-            self.output.write(remote_host + b" " + environ[b'HTTP_HOST']+ b" - [" + tts + b" GMT] \"" + environ[b'REQUEST_METHOD'] + b" " + environ[b'fapws.uri'] + b" " + environ[b'wsgi.url_scheme'] + b"\" " + start_response.status_code + b" " + size + b" \"" + (environ.get(b"HTTP_REFERER") or b"-") + b"\" \"" + (environ.get(b'HTTP_USER_AGENT') or b"-") + b"\"\n" )
+            remote_host = environ.get('HTTP_X_FORWARDED_FOR', environ['fapws.remote_addr'])
+            self.output.write(remote_host + b" " + environ['HTTP_HOST']+ b" - [" + tts + b" GMT] \"" + environ['REQUEST_METHOD'] + b" " + environ['fapws.uri'] + b" " + environ['wsgi.url_scheme'] + b"\" " + start_response.status_code + b" " + size + b" \"" + (environ.get("HTTP_REFERER") or b"-") + b"\" \"" + (environ.get('HTTP_USER_AGENT') or b"-") + b"\"\n" )
             self.output.flush()
             return res
         return func

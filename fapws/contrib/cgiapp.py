@@ -25,9 +25,8 @@ class CGIApplication:
     def _setup_cgi_environ(self, environ):
         for key, val in list(environ.items()):
             if type(val) in (str,bytes):
-                key = convert_to_bytes(key)
                 self.cgi_environ[key] = convert_to_bytes(val)
-        self.cgi_environ[b'REQUEST_URI'] = convert_to_bytes(environ['fapws.uri'])
+        self.cgi_environ['REQUEST_URI'] = convert_to_bytes(environ['fapws.uri'])
 
     def _split_return(self, data):
         data = convert_to_bytes(data)
@@ -62,9 +61,9 @@ class CGIApplication:
                     env=self.cgi_environ,
                     cwd=self.dirname,
                     )
-        input_len = int(environ.get(b'CONTENT_LENGTH', b'0'))
+        input_len = int(environ.get('CONTENT_LENGTH', b'0'))
         if input_len:
-            cgi_input = environ[b'wsgi.input'].read(input_len)
+            cgi_input = environ['wsgi.input'].read(input_len)
         else:
             cgi_input = ""
         #print "cgi input", cgi_input

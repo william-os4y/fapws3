@@ -90,37 +90,37 @@ a dictionary key and list of values
 
 
 {
- 'fapws.params': {'param': ['key']}, 
- 'fapws.uri': '/hello/toto?param=key', 
- 'fapws.raw_header': '...'
- 'fapws.major_minor': '1.1', 
- 'fapws.remote_addr': '127.0.0.1', 
+ 'fapws.params': {b'param': [b'key']}, 
+ 'fapws.uri': b'/hello/toto?param=key', 
+ 'fapws.raw_header': b'...'
+ 'fapws.major_minor': b'1.1', 
+ 'fapws.remote_addr': b'127.0.0.1', 
  'fapws.remote_port': 60580, 
- 'REQUEST_METHOD': 'GET', 
- 'SCRIPT_NAME': '/hello', 
- 'QUERY_STRING': 'param=key', 
- 'SERVER_NAME': '0.0.0.0', 
- 'SERVER_PORT': '8080', 
- 'PATH_INFO': '/toto'
- 'REMOTE_ADDR': '127.0.0.1', 
- 'HTTP_PROTOCOL': 'HTTP/1.1', 
- 'wsgi.input': <cStringIO.StringO object at 0xb75e7dc0>, 
+ 'REQUEST_METHOD': b'GET', 
+ 'SCRIPT_NAME': b'/hello', 
+ 'QUERY_STRING': b'param=key', 
+ 'SERVER_NAME': b'0.0.0.0', 
+ 'SERVER_PORT': b'8080', 
+ 'PATH_INFO': b'/toto'
+ 'REMOTE_ADDR': b'127.0.0.1', 
+ 'HTTP_PROTOCOL': b'HTTP/1.1', 
+ 'wsgi.input': <_io.BytesIO object at 0xb75e7dc0>, 
  'wsgi.multithread': False, 
  'wsgi.version': (1, 0), 
  'wsgi.run_once': False, 
- 'wsgi.errors': <cStringIO.StringO object at 0xb75e7da0>, 
+ 'wsgi.errors': <_io.StringO object at 0xb75e7da0>, 
  'wsgi.multiprocess': True, 
- 'wsgi.url_scheme': 'http', 
- 'HTTP_COOKIE': '__utma=96992031.1741467985.1258282980.1258282980.1258282980.1', 
- 'HTTP_HOST': '127.0.0.1:8080', 
- 'HTTP_KEEP_ALIVE': '115', 
- 'HTTP_CONNECTION': 'keep-alive', 
- 'HTTP_CACHE_CONTROL': 'max-age=0', 
- 'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,*;q=0.8', 
- 'HTTP_ACCEPT_CHARSET': 'ISO-8859-1,utf-8;q=0.7,*;q=0.7', 
- 'HTTP_USER_AGENT': 'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.3) Gecko/20100423 Ubuntu/10.04 (lucid) Firefox/3.6.3', 
- 'HTTP_ACCEPT_LANGUAGE': 'en-us,en;q=0.5', 
- 'HTTP_ACCEPT_ENCODING': 'gzip,deflate', 
+ 'wsgi.url_scheme': b'http', 
+ 'HTTP_COOKIE': b'__utma=96992031.1741467985.1258282980.1258282980.1258282980.1', 
+ 'HTTP_HOST': b'127.0.0.1:8080', 
+ 'HTTP_KEEP_ALIVE': b'115', 
+ 'HTTP_CONNECTION': b'keep-alive', 
+ 'HTTP_CACHE_CONTROL': b'max-age=0', 
+ 'HTTP_ACCEPT': b'text/html,application/xhtml+xml,application/xml;q=0.9,*;q=0.8', 
+ 'HTTP_ACCEPT_CHARSET': b'ISO-8859-1,utf-8;q=0.7,*;q=0.7', 
+ 'HTTP_USER_AGENT': b'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.3) Gecko/20100423 Ubuntu/10.04 (lucid) Firefox/3.6.3', 
+ 'HTTP_ACCEPT_LANGUAGE': b'en-us,en;q=0.5', 
+ 'HTTP_ACCEPT_ENCODING': b'gzip,deflate', 
 }
 
 
@@ -207,7 +207,7 @@ PyObject * header_to_dict (struct client *cli)
    PyObject *pyheader_key=NULL;
 
    pyval = PyBytes_FromChar(cli->input_header); 
-   PyDict_SetItemChar(pydict, "fapws.raw_header", pyval);
+   PyDict_SetItemString(pydict, "fapws.raw_header", pyval);
    Py_DECREF(pyval);
 
    len=strlen(buf);
@@ -233,7 +233,7 @@ PyObject * header_to_dict (struct client *cli)
            assert(cli->cmd);
            strcpy(cli->cmd, data);   // will be cleaned with cli
            pyval = PyBytes_FromChar(data);
-           PyDict_SetItemChar(pydict, "REQUEST_METHOD", pyval);
+           PyDict_SetItemString(pydict, "REQUEST_METHOD", pyval);
            Py_DECREF(pyval);
          }
          break;
@@ -246,7 +246,7 @@ PyObject * header_to_dict (struct client *cli)
            data[j-1]='\0';
            //printf("PATH:%s***\n",data);
            pyval = PyBytes_FromChar(data);
-           PyDict_SetItemChar(pydict, "fapws.uri", pyval);
+           PyDict_SetItemString(pydict, "fapws.uri", pyval);
            Py_DECREF(pyval);
            cli->uri=malloc(strlen(data)+1);
            assert(cli->uri);
@@ -255,7 +255,7 @@ PyObject * header_to_dict (struct client *cli)
            query_string=data+sw_query_string-1;
            //printf("QUERY_STRING:%s***\n", query_string);
            pyval = PyBytes_FromChar(query_string);
-           PyDict_SetItemChar(pydict, "QUERY_STRING", pyval);
+           PyDict_SetItemString(pydict, "QUERY_STRING", pyval);
            Py_DECREF(pyval);
            j=0;
            
@@ -272,14 +272,14 @@ PyObject * header_to_dict (struct client *cli)
            major_minor=data+j-1-3;
            //printf("MAJOR MINOR:%s***\n",major_minor); 
            pyval = PyBytes_FromChar(major_minor);
-           PyDict_SetItemChar(pydict, "fapws.major_minor", pyval);
+           PyDict_SetItemString(pydict, "fapws.major_minor", pyval);
            Py_DECREF(pyval);
            pyval = PyString_FromStringAndSize(data, j-1-4); //remove "/1.1" for example
-           PyDict_SetItemChar(pydict, "wsgi.url_scheme", pyval);
+           PyDict_SetItemString(pydict, "wsgi.url_scheme", pyval);
            Py_DECREF(pyval);
            pyval = PyBytes_FromChar(data); 
-           PyDict_SetItemChar(pydict, "SERVER_PROTOCOL", pyval);
-           PyDict_SetItemChar(pydict, "REQUEST_PROTOCOL", pyval);
+           PyDict_SetItemString(pydict, "SERVER_PROTOCOL", pyval);
+           PyDict_SetItemString(pydict, "REQUEST_PROTOCOL", pyval);
            Py_DECREF(pyval);
            j=0;
          }
@@ -294,7 +294,7 @@ PyObject * header_to_dict (struct client *cli)
            j=0;
            //printf("KEY:%s***\n",data);
            transform_header_key_to_wsgi_key(data, buf2);
-           pyheader_key=PyBytes_FromChar(buf2);
+           pyheader_key=PyUnicode_FromString(buf2);
            
          }
          break;
@@ -336,10 +336,10 @@ PyObject *py_build_method_variables( struct client *cli)
     PyObject *pydummy=NULL;
 
     pydummy=PyBytes_FromChar(server_name);
-    PyDict_SetItemChar(pydict, "SERVER_NAME", pydummy);
+    PyDict_SetItemString(pydict, "SERVER_NAME", pydummy);
     Py_DECREF(pydummy);
     pydummy=PyBytes_FromChar(server_port);
-    PyDict_SetItemChar(pydict, "SERVER_PORT", pydummy);
+    PyDict_SetItemString(pydict, "SERVER_PORT", pydummy);
     Py_DECREF(pydummy);
    
     // Clean up the uri 
@@ -347,17 +347,17 @@ PyObject *py_build_method_variables( struct client *cli)
     rst_uri = (char *)calloc(len, sizeof(char));
     strncpy(rst_uri, cli->uri + strlen(cli->uri_path), len);
     pydummy=PyBytes_FromChar(cli->uri_path);
-    PyDict_SetItemChar(pydict, "SCRIPT_NAME", pydummy);
+    PyDict_SetItemString(pydict, "SCRIPT_NAME", pydummy);
     Py_DECREF(pydummy);
     
     if (strchr(rst_uri, '?') == NULL) {
         decoded_uri=decode_uri(rst_uri);
         pydummy=PyBytes_FromChar(decoded_uri);
         free(decoded_uri);
-        PyDict_SetItemChar(pydict, "PATH_INFO", pydummy);
+        PyDict_SetItemString(pydict, "PATH_INFO", pydummy);
         Py_DECREF(pydummy);
         pydummy=PyBytes_FromChar("");
-        PyDict_SetItemChar(pydict, "QUERY_STRING", pydummy);    
+        PyDict_SetItemString(pydict, "QUERY_STRING", pydummy);    
         Py_DECREF(pydummy);
     }
     else {
@@ -367,13 +367,13 @@ PyObject *py_build_method_variables( struct client *cli)
         decoded_uri=decode_uri(path_info);
         pydummy=PyBytes_FromChar(decoded_uri);
         free(decoded_uri);
-        PyDict_SetItemChar(pydict, "PATH_INFO", pydummy);
+        PyDict_SetItemString(pydict, "PATH_INFO", pydummy);
         Py_DECREF(pydummy);
         pydummy=PyBytes_FromChar(query_string);        
-        PyDict_SetItemChar(pydict,"QUERY_STRING",pydummy);
+        PyDict_SetItemString(pydict,"QUERY_STRING",pydummy);
         Py_DECREF(pydummy);
         pydummy=parse_query(query_string);
-        PyDict_SetItemChar(pydict,"fapws.params",pydummy);
+        PyDict_SetItemString(pydict,"fapws.params",pydummy);
         Py_DECREF(pydummy);
         free(path_info);
     }
@@ -390,11 +390,11 @@ PyObject *py_get_request_info(struct client *cli)
     PyObject *pydummy=NULL;
     
     pydummy=PyBytes_FromChar(cli->remote_addr);
-    PyDict_SetItemChar(pydict, "fapws.remote_addr", pydummy);
-    PyDict_SetItemChar(pydict, "REMOTE_ADDR", pydummy);
+    PyDict_SetItemString(pydict, "fapws.remote_addr", pydummy);
+    PyDict_SetItemString(pydict, "REMOTE_ADDR", pydummy);
     Py_DECREF(pydummy);
     pydummy=Py_BuildValue("H",cli->remote_port);
-    PyDict_SetItemChar(pydict, "fapws.remote_port", pydummy);
+    PyDict_SetItemString(pydict, "fapws.remote_port", pydummy);
     Py_DECREF(pydummy);
     return pydict;
 }
@@ -406,7 +406,7 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
 {
     PyObject *pydummy; 
 
-    pydummy=PyDict_GetItemChar(pyenviron,"HTTP_CONTENT_LENGTH");
+    pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_LENGTH");
     if (pydummy==NULL) {
         //a POST without content-length is not a valid 
         if (debug) {
@@ -418,10 +418,10 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     char *content_length_str = PyBytes_AsChar(pydummy);
     int content_length = atoi(content_length_str);
     pydummy = PyInt_FromString(content_length_str, NULL, 10);
-    PyDict_SetItemChar(pyenviron, "CONTENT_LENGTH", pydummy); 
+    PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy); 
     Py_DECREF(pydummy);
 
-    PyObject *pystringio=PyDict_GetItemChar(pyenviron, "wsgi.input");
+    PyObject *pystringio=PyDict_GetItemString(pyenviron, "wsgi.input");
     Py_INCREF(pystringio);
     PyObject *pystringio_write=PyObject_GetAttrString(pystringio, "write");
     Py_DECREF(pystringio);
@@ -436,12 +436,12 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     Py_DECREF(pystringio_seek);
 
     //fapws.params cannot be done in case of multipart
-    pydummy=PyDict_GetItemChar(pyenviron,"HTTP_CONTENT_TYPE");
+    pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_TYPE");
     if (pydummy!=NULL)
     {
-        PyDict_SetItemChar(pyenviron,"CONTENT_TYPE", pydummy);
+        PyDict_SetItemString(pyenviron,"CONTENT_TYPE", pydummy);
     } else {
-        PyDict_SetItemChar(pyenviron,"CONTENT_TYPE", Py_None);
+        PyDict_SetItemString(pyenviron,"CONTENT_TYPE", Py_None);
     }
     //no incref because value not needed
     if (pydummy!=NULL)
@@ -450,7 +450,7 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
         if (strncasecmp(ct, "application/x-www-form-urlencoded", 33)==0) 
         { 
             pydummy=parse_query(cli->input_body);
-            PyDict_SetItemChar(pyenviron,"fapws.params",pydummy);
+            PyDict_SetItemString(pyenviron,"fapws.params",pydummy);
             Py_DECREF(pydummy);
         }
     }

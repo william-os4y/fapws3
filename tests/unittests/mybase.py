@@ -19,13 +19,13 @@ from fapws.contrib import multipart
 
 class Environ(dict):
     def __init__(self, *arg, **kw):
-        self[b'wsgi.version'] = (1, 0)
-        self[b'wsgi.errors'] = BytesIO()
-        self[b'wsgi.input'] = multipart.MultipartFormData("/tmp/")
-        self[b'wsgi.multithread'] = False
-        self[b'wsgi.multiprocess'] = True
-        self[b'wsgi.run_once'] = False
-        self[b'fapws.params'] = {}
+        self['wsgi.version'] = (1, 0)
+        self['wsgi.errors'] = BytesIO()
+        self['wsgi.input'] = multipart.MultipartFormData("/tmp/")
+        self['wsgi.multithread'] = False
+        self['wsgi.multiprocess'] = True
+        self['wsgi.run_once'] = False
+        self['fapws.params'] = {}
     #here after some entry point before the Environ update
 
     def update_headers(self, data):

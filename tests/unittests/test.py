@@ -36,13 +36,13 @@ if 1:
   con.request("GET", "/env/param?key=val")
   response=con.getresponse()
   content=response.read()
-  test(b"b'SCRIPT_NAME':b'/env'",response.status==200,content) 
-  test(b"b'PATH_INFO':b'/param'",response.status==200,content)
-  test(b"b'REQUEST_METHOD':b'GET'",response.status==200,content)  
-  test(b"b'SERVER_PROTOCOL':b'HTTP/1.1'",response.status==200,content) 
-  test(b"b'wsgi.url_scheme':b'HTTP'",response.status==200,content) 
-  test(b"b'QUERY_STRING':b'key=val'",response.status==200,content) 
-  test(b"b'fapws.params':{b'key': [b'val']}",response.status==200,content) 
+  test(b"SCRIPT_NAME:b'/env'",response.status==200,content) 
+  test(b"PATH_INFO:b'/param'",response.status==200,content)
+  test(b"REQUEST_METHOD:b'GET'",response.status==200,content)  
+  test(b"SERVER_PROTOCOL:b'HTTP/1.1'",response.status==200,content) 
+  test(b"wsgi.url_scheme:b'HTTP'",response.status==200,content) 
+  test(b"QUERY_STRING:b'key=val'",response.status==200,content) 
+  test(b"fapws.params:{b'key': [b'val']}",response.status==200,content) 
 
   print("=== URL not found ===")
   con.request("GET", "/wrongpage")
@@ -146,28 +146,28 @@ if 1:
   con.request("GET", "/env", "", headers)
   response=con.getresponse()
   content=response.read()
-  test(b"b'HTTP_BADKEY':b': Value'", response.status==200 , content)
+  test(b"HTTP_BADKEY:b': Value'", response.status==200 , content)
 
   print("=== Bad header: key with CR  ===")
   headers={'Bad\nkey': "Value"}
   con.request("GET", "/env", "", headers)
   response=con.getresponse()
   content=response.read()
-  test(b"KEY':b'Value'", response.status==200 , content)
+  test(b"KEY:b'Value'", response.status==200 , content)
 
   print("=== Bad header: value with CR  ===")
   headers={'Badkey': "Val\nue"}
   con.request("GET", "/env", "", headers)
   response=con.getresponse()
   content=response.read()
-  test(b"b'HTTP_BADKEY':b'Val", response.status==200 , content)
+  test(b"HTTP_BADKEY:b'Val", response.status==200 , content)
 
   print("=== Bad header: value with CRLF  ===")
   headers={'Badkey': "Val\r\nue"}
   con.request("GET", "/env", "", headers)
   response=con.getresponse()
   content=response.read()
-  test(b"b'HTTP_BADKEY':b'Val", response.status==200 , content)
+  test(b"HTTP_BADKEY:b'Val", response.status==200 , content)
 
   print("=== Bad command  ===")
   con.request("GIT", "/env")
@@ -179,7 +179,7 @@ if 1:
   con.request("GET", "/env\r\n")
   response=con.getresponse()
   content=response.read()
-  test(b"b'SCRIPT_NAME':b'/env'", response.status==200 , content)
+  test(b"SCRIPT_NAME:b'/env'", response.status==200 , content)
 
   print("=== Bad script  ===")
   con.request("GET", "/badscript")

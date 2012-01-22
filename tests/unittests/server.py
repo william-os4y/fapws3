@@ -7,17 +7,16 @@ import time
 import sys
 from fapws.contrib import views, zip, log
 import mybase
-
+import pprint
 
 def env(environ, start_response):
     start_response(b'200 OK', [(b'Content-Type',b'text/html')])
     res=[]
-    print("PY env",environ)
+    pprint.pprint(environ)
     for key,val in environ.items():
         val=str(val).replace('\r','\\r')
         val=val.replace('\n','\\n')
         res.append(bytes("%s:%s\n" % (key,val),"utf-8"))
-    print("PY RES:%s" % res)
     return res
 
 def hello(environ, start_response):
@@ -58,10 +57,10 @@ def staticshort(environ, start_response):
 
 def testpost(environ, start_response):
     print(environ)
-    if b"multipart/form-data" in environ[b'HTTP_CONTENT_TYPE']:
-        res=environ[b"wsgi.input"].getvalue()
-    elif b"application/x-www-form-urlencoded" in environ[b'HTTP_CONTENT_TYPE']:
-        res=environ[b"fapws.params"]
+    if b"multipart/form-data" in environ['HTTP_CONTENT_TYPE']:
+        res=environ["wsgi.input"].getvalue()
+    elif b"application/x-www-form-urlencoded" in environ['HTTP_CONTENT_TYPE']:
+        res=environ["fapws.params"]
     else:
         res={}
     ret = "OK. params are:%s" % (res)
@@ -101,7 +100,7 @@ def start():
     evwsgi.wsgi_cb((b"/testpost", testpost))
     evwsgi.wsgi_cb((b"/badscript", badscript))
 
-    evwsgi.set_debug(0)    
+    evwsgi.set_debug(1)    
     evwsgi.run()
     
 
