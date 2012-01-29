@@ -48,7 +48,7 @@ class CGIApplication:
                 name, value = line.split(b':', 1)
                 headers.append((convert_to_bytes(name), convert_to_bytes(value)))
             i += 1
-        status = " ".join(firstline.split()[1:])
+        status = b" ".join(firstline.split()[1:])
         return status, headers
 
     def __call__(self, environ, start_response):
@@ -66,7 +66,6 @@ class CGIApplication:
             cgi_input = environ['wsgi.input'].read(input_len)
         else:
             cgi_input = ""
-        #print "cgi input", cgi_input
         stdout, stderr = proc.communicate(cgi_input)
         if stderr:
             return [stderr]
