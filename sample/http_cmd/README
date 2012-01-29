@@ -1,0 +1,8 @@
+After having started this server, you can test it with a simple telnet command:
+telnet 127.0.0.1 8080
+
+In the prompt type the following:
+TRACE /hello HTTP/1.1
+<new line>
+
+And you should see the environ values

@@ -8,7 +8,7 @@ from fapws.contrib import views, zip, log
 
 import trace
 
-base.supported_HTTP_command.append("TRACE")
+base.supported_HTTP_command.append(b"TRACE")
 def start():
     evwsgi.start("0.0.0.0", "8080")
     evwsgi.set_base_module(base)
