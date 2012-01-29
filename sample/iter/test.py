@@ -4,8 +4,8 @@ import time
 
 
 def application(environ, start_response):
-    status = '404 Not Found'
-    output = 'Pong!'
+    status = b'404 Not Found'
+    output = b'Pong!'
 
     response_headers = [('Content-type', 'text/plain')]
     #response_headers = [('Content-type', 'text/plain'),
@@ -15,9 +15,9 @@ def application(environ, start_response):
     # return [output] # <- works OK
     yield output # <- does not convey 404 status to client
     time.sleep(5)
-    yield "and"
+    yield b" and "
     time.sleep(5)
-    yield "Ping!!!"
+    yield b"Ping!!!"
 
 if __name__=="__main__":
     import fapws._evwsgi as evwsgi
