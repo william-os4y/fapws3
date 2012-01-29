@@ -10,9 +10,9 @@
 #include "wsgi.h"
 #include "compat.h"
 
-char *server_name;
-char *server_port;
-int debug;
+extern char *server_name;
+extern char *server_port;
+extern int debug;
 
 /*
 This procdure analyse uri and return a Python dictionary with every parameters as keys and their associated values into a list. 
@@ -96,6 +96,7 @@ a dictionary key and list of values
  'fapws.major_minor': b'1.1', 
  'fapws.remote_addr': b'127.0.0.1', 
  'fapws.remote_port': 60580, 
+ 'fapws.socket_fd': 4,
  'REQUEST_METHOD': b'GET', 
  'SCRIPT_NAME': b'/hello', 
  'QUERY_STRING': b'param=key', 
@@ -395,6 +396,9 @@ PyObject *py_get_request_info(struct client *cli)
     Py_DECREF(pydummy);
     pydummy=Py_BuildValue("H",cli->remote_port);
     PyDict_SetItemString(pydict, "fapws.remote_port", pydummy);
+    Py_DECREF(pydummy);
+    pydummy=PyLong_FromLong(cli->fd);
+    PyDict_SetItemString(pydict, "fapws.socket_fd", pydummy);
     Py_DECREF(pydummy);
     return pydict;
 }

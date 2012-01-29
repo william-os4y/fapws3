@@ -75,7 +75,10 @@ if 'LIBPATH' in os.environ.keys():
 
 #anyhow we include the standards directories
 search_library_dirs.extend(['/usr/lib','/usr/local/lib','/opt/local/lib','/usr/lib64','/usr/pkg/lib/ev'])
-search_include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include','/usr/pkg/include/ev'])
+if sys.platform == "darwin":
+    search_include_dirs.extend(['/usr/local/include','/opt/local/include','/usr/pkg/include/ev'])
+else:
+    search_include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include','/usr/pkg/include/ev'])
 
 #version=platform.python_version_tuple()
 #if int(version[0])==2 and int(version[1])>=4:
@@ -104,7 +107,10 @@ if res==False:
     print("Please install libev, or provide the path by setting the shell environmental variable LD_LIBRARY_PATH")
     sys.exit(1)
 library_dirs.append(res)
-extra_link_args=['-Wl,-R%s' % res]
+if sys.platform == "darwin":
+    extra_link_args=['-Wl']
+else:
+    extra_link_args=['-Wl,-R%s' % res]
 
 
 setup(cmdclass = {'build_py': build_py},

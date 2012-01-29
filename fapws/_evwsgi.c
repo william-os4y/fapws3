@@ -32,6 +32,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <assert.h>
+#include <sys/un.h>
 
 #include <ev.h>
 
@@ -47,6 +48,7 @@
 Somme  global variables
 */
 char *server_name="127.0.0.1";
+int server_name_length;
 char *server_port="8000";
 int sockfd;  // main sock_fd
 int debug=0; //1 full debug detail: 0 nodebug
@@ -84,58 +86,81 @@ http://beej.us/guide/bgnet/output/html/singlepage/bgnet.html
     int yes=1;
     int rv;
 
-    if (!PyArg_ParseTuple(args, "ss", &server_name, &server_port))
+    if (!PyArg_ParseTuple(args, "s#s", &server_name, &server_name_length, &server_port))
     {
         PyErr_SetString(ServerError, "Failed to parse the start parameters. Must be 2 strings.");
         return NULL;
     }
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE; // use my IP
-    if ((rv = getaddrinfo(server_name, server_port, &hints, &servinfo)) == -1) {
-        PyErr_Format(ServerError, "getaddrinfo: %s", gai_strerror(rv));
-        return NULL;
-    }
+    if (strncmp(server_port, "unix", 4) != 0) {
+        memset(&hints, 0, sizeof hints);
+        hints.ai_family = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_flags = AI_PASSIVE; // use my IP
+        if ((rv = getaddrinfo(server_name, server_port, &hints, &servinfo)) == -1) {
+            PyErr_Format(ServerError, "getaddrinfo: %s", gai_strerror(rv));
+            return NULL;
+        }
 
-    // loop through all the results and bind to the first we can
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        // loop through all the results and bind to the first we can
+        for(p = servinfo; p != NULL; p = p->ai_next) {
+            sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+            if (sockfd == -1) {
+                perror("server: socket");
+                continue;
+            }
+
+            if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                    sizeof(int)) == -1) {
+                perror("setsockopt");
+            }
+
+            if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+                close(sockfd);
+                perror("server: bind");
+                continue;
+            }
+
+            break;
+        }
+        
+        freeaddrinfo(servinfo); // all done with this structure
+
+        if (p == NULL)  {
+            PyErr_SetString(ServerError, "server: failed to bind");
+            return NULL;
+        }
+        
+    } else {
+        sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (sockfd == -1) {
             perror("server: socket");
-            continue;
+            PyErr_SetString(ServerError, "server: failed to create socket");
+            return NULL;
         }
-
-        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
-                sizeof(int)) == -1) {
-            perror("setsockopt");
-        }
-
-        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+        
+        struct sockaddr_un sockun;
+        sockun.sun_family = AF_UNIX;
+        memcpy(sockun.sun_path, server_name, server_name_length);
+        /*if (sockun.sun_path[0] == '@')
+            sockun.sun_path[0] = '\0';*/
+        if (bind(sockfd, (struct sockaddr *) &sockun, server_name_length+2) == -1) {
             close(sockfd);
             perror("server: bind");
-            continue;
+            PyErr_SetString(ServerError, "server: failed to bind");
+            return NULL;
         }
-
-        break;
-    }
-
-    freeaddrinfo(servinfo); // all done with this structure
-
-    if (p == NULL)  {
-        PyErr_SetString(ServerError, "server: failed to bind");
-        return NULL;
     }
 
     if (listen(sockfd, BACKLOG) == -1) {
         PyErr_SetString(ServerError, "listen");
         return NULL;
     }
-    printf("listen on %s:%s\n", server_name, server_port);
+    if (server_name[0] == 0)
+        printf("listen on @%s:unix\n", server_name+1);
+    else
+        printf("listen on %s:%s\n", server_name, server_port);
     return Py_None;
 }
-
-
 
 /*
 Procedure exposed in Python will generate and start the event loop
@@ -188,6 +213,15 @@ static PyObject *py_run_loop(PyObject *self, PyObject *args)
 }
 
 /*
+Procedure exposed in Python to provide the sockfd
+*/
+static PyObject *py_socket_fd(PyObject *self, PyObject *args)
+{
+    PyObject *pyres = PyLong_FromLong(sockfd);
+    return pyres;
+}
+
+/*
 Procedure exposed in Python to provide libev's ABI version
 */
 static PyObject *py_libev_version(PyObject *self, PyObject *args)
@@ -228,6 +262,10 @@ static PyObject *py_add_wsgi_cb(PyObject *self, PyObject *args)
     PyObject *py_tuple;
     if (!PyArg_ParseTuple(args, "O", &py_tuple)) 
         return NULL;
+    if (py_registered_uri == NULL) {
+        PyErr_SetString(ServerError, "Base module not set");
+        return NULL;
+    }
     PyList_Append(py_registered_uri, py_tuple);
     return Py_None;    
 }
@@ -432,6 +470,7 @@ static PyMethodDef evwsgiMethods[] = {
     {"defer", py_defer, METH_VARARGS, "defer the execution of a python function."},
     {"defer_queue_size", py_defer_queue_size, METH_VARARGS, "Get the size of the defer queue"},
     {"rfc1123_date", py_rfc1123_date, METH_VARARGS, "trasnform a time (in sec) into a string compatible with the rfc1123"},
+    {"socket_fd", py_socket_fd, METH_VARARGS, "Return the server socket's file descriptor"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
  

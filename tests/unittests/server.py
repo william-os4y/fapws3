@@ -7,7 +7,12 @@ import time
 import sys
 from fapws.contrib import views, zip, log
 import mybase
-import pprint
+
+if len(sys.argv)>1 and sys.argv[1]=="socket":
+  import socket
+  socket_server = True
+else:
+  socket_server = False
 
 def env(environ, start_response):
     start_response(b'200 OK', [(b'Content-Type',b'text/html')])
@@ -22,6 +27,13 @@ def env(environ, start_response):
 def hello(environ, start_response):
     start_response(b'200 OK', [(b'Content-Type',b'text/html')])
     return [b"Hello",b" world!!"]
+
+class helloclass(object):
+    def __init__(self, txt=None):
+        self.content = ["Hello from class %s" % txt]
+    def __call__(self, environ, start_response):
+        start_response('200 OK', [('Content-Type','text/html')])
+        return self.content
 
 def iteration(environ, start_response):
     start_response('200 OK', [('Content-Type','text/plain')])
@@ -83,11 +95,15 @@ def badscript(environ, start_response):
 
 
 def start():
-    evwsgi.start("0.0.0.0", "8080")
+    if socket_server:
+        evwsgi.start("\0/org/fapws3/server", "unix")
+    else:
+        evwsgi.start("0.0.0.0", "8080")
     evwsgi.set_base_module(mybase)
     
  
     evwsgi.wsgi_cb((b"/env", env))
+    evwsgi.wsgi_cb((b"/helloclass", helloclass("!!!")))
     evwsgi.wsgi_cb((b"/hello", hello))
     evwsgi.wsgi_cb((b"/tuplehello", tuplehello))
     evwsgi.wsgi_cb((b"/iterhello", iteration))
@@ -100,7 +116,7 @@ def start():
     evwsgi.wsgi_cb((b"/testpost", testpost))
     evwsgi.wsgi_cb((b"/badscript", badscript))
 
-    evwsgi.set_debug(1)    
+    evwsgi.set_debug(0)    
     evwsgi.run()
     
 
