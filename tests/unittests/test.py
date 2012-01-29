@@ -3,9 +3,10 @@ import httplib
 import urllib
 import os.path
 
-import pycurl
 import os
 import sys
+
+import _raw_send
 
 if len(sys.argv)>1 and sys.argv[1]=="socket":
   import socket
@@ -139,25 +140,29 @@ if 1:
     print "=== Post multipart is skipped on Socket server ==="
   else:
     print "=== Post with multipart ==="
-    pf = [('field1', 'this is a test using httppost & stuff'),
-        ('field2', (pycurl.FORM_FILE, 'short.txt'))
-       ]
-
-    response=""
-    def echo(data):
-      global response
-      response+=data
-   
-    fpath='/tmp/short.txt'
-    if os.path.isfile(fpath):
-      os.remove(fpath) #we remove the data stored by the MultipartFormData
-
-    c = pycurl.Curl()
-    c.setopt(c.URL, 'http://127.0.0.1:8080/testpost')
-    c.setopt(c.WRITEFUNCTION, echo)
-    c.setopt(c.HTTPPOST, pf)
-    c.perform()
-    c.close()
+    try:
+      os.remove('/tmp/short.txt')
+    except:
+      pass
+    data = """POST /testpost HTTP/1.1\r
+Host: 127.0.0.1:8080\r
+Accept: */*\r
+Content-Length: 333\r
+Content-Type: multipart/form-data; boundary=----------------------------6b72468f07eb\r
+\r
+------------------------------6b72468f07eb\r
+Content-Disposition: form-data; name="field1"\r
+\r
+this is a test using httppost & stuff\r
+------------------------------6b72468f07eb\r
+Content-Disposition: form-data; name="field2"; filename="short.txt"\r
+Content-Type: text/plain\r
+\r
+Hello world
+\r
+------------------------------6b72468f07eb--\r\n"""  
+    response = _raw_send.send(data)
+    print "response", response
     test("OK. params are:{'field2': ['/tmp/short.txt', {'Content-Type': 'text/plain', 'size': 14L}], 'field1': ['this is a test using httppost & stuff']}", 1==1, response)
 
   print "=== Options ==="
