@@ -92,7 +92,7 @@ class MultipartFormData(object):
                     if self.filerepository.fpath:
                         #we have to close the previous outputfid
                         self.filerepository.close()
-                        paramattr['size']=os.path.getsize(paramvalue)
+                        paramattr[b'size']=os.path.getsize(paramvalue)
                     if paramkey:
                         self.results.setdefault(paramkey,[])
                         self.results[paramkey].append(paramvalue)
@@ -108,10 +108,11 @@ class MultipartFormData(object):
                     if key==b"Content-Disposition" and val[0:10]==b"form-data;":
                         for elem in val[11:].split(b';'):
                             pkey,pval=[x.strip() for x in elem.split(b'=')]
-                            if pval[0]==b'"' and pval[-1]==b'"':
+                            if pval[0:1]==b'"' and pval[-1:]==b'"':
                                 pval=pval[1:-1]
                             if pkey==b"filename":
                                 if pval:
+                                    pval = pval.decode('utf8')
                                     self.filerepository.open(self.basepath+pval)
                                     paramvalue=self.filerepository.fpath
                             elif pkey==b"name":
