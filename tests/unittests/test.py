@@ -31,14 +31,14 @@ def test(search, test, data):
         print("SUCCESS")
         successes+=1
 
-class UHTTPConnection(httplib.HTTPConnection):
+class UHTTPConnection(http.client.HTTPConnection):
     """Subclass of Python library HTTPConnection that
        uses a unix-domain socket.
        borrowed from http://7bits.nl/blog/2007/08/15/http-on-unix-sockets-with-python
     """
  
     def __init__(self, path):
-        httplib.HTTPConnection.__init__(self, 'localhost')
+        http.client.HTTPConnection.__init__(self, 'localhost')
         self.path = path
  
     def connect(self):
@@ -49,7 +49,7 @@ class UHTTPConnection(httplib.HTTPConnection):
 if socket_server:
     con = UHTTPConnection("\0/org/fapws3/server")
 else:
-    con = httplib.HTTPConnection("127.0.0.1:8080")
+    con = http.client.HTTPConnection("127.0.0.1:8080")
     
 if 1:
   print("=== Normal get ===")
@@ -88,13 +88,13 @@ if 1:
   content=response.read()
   test(b"Hello world!!", response.status==200, content)
 
-  print "=== Get Class Hello world ==="
+  print("=== Get Class Hello world ===")
   con.request("GET", "/helloclass")
   response=con.getresponse()
   content=response.read()
-  test("Hello from class !!!", response.status==200, content)
+  test(b"Hello from class !!!", response.status==200, content)
 
-  print "=== Get long file ==="
+  print("=== Get long file ===")
   con.request("GET", "/long")
   response=con.getresponse()
   content=response.read()
@@ -132,7 +132,7 @@ if 1:
   params = urllib.parse.urlencode({'var1': 'value1', 'var2': 'value2'})
   headers = {"Content-type": "application/x-www-form-urlencoded", 
             "Accept": "text/plain"}
-  con.request("POST", "/testpost", params, headers) #in this case httplib send automatically the content-length header
+  con.request("POST", "/testpost", params, headers) #in this case http.client send automatically the content-length header
   response=con.getresponse()
   content=response.read()
   test(b"OK. params are:{b'var1': [b'value1'], b'var2': [b'value2']}", response.status==200, content)
@@ -145,7 +145,7 @@ if 1:
       os.remove('/tmp/short.txt')
     except:
       pass
-    data = """POST /testpost HTTP/1.1\r
+    data = b"""POST /testpost HTTP/1.1\r
 Host: 127.0.0.1:8080\r
 Accept: */*\r
 Content-Length: 333\r
@@ -163,8 +163,7 @@ Hello world
 \r
 ------------------------------6b72468f07eb--\r\n"""  
     response = _raw_send.send(data)
-    print("response", response)
-    test("OK. params are:{'field2': ['/tmp/short.txt', {'Content-Type': 'text/plain', 'size': 14L}], 'field1': ['this is a test using httppost & stuff']}", 1==1, response)
+    test(b"OK. params are:{b'field2': ['/tmp/short.txt', {b'Content-Type': b'text/plain', b'size': 14}], b'field1': [b'this is a test using httppost & stuff']}", 1==1, response)
 
   print("=== Options ===")
   con.request("OPTIONS", "/")

@@ -12,7 +12,7 @@ def send(post_data, port=8080, host='127.0.0.1'):
 
 
 if __name__ ==  "__main__":
-    data = """POST /testpost HTTP/1.1\r
+    data = b"""POST /testpost HTTP/1.1\r
 Host: 127.0.0.1:8080\r
 Accept: */*\r
 Content-Length: 333\r

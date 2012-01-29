@@ -7,6 +7,7 @@ import time
 import sys
 from fapws.contrib import views, zip, log
 import mybase
+import pprint
 
 if len(sys.argv)>1 and sys.argv[1]=="socket":
   import socket
