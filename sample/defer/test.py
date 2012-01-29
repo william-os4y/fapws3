@@ -10,16 +10,16 @@ def toto(v):
     global count
     time.sleep(v)
     count+=1
-    print "defer sleep %s, counter %s, %s" % (v,count,evwsgi.defer_queue_size())
+    print("defer sleep %s, counter %s, %s" % (v,count,evwsgi.defer_queue_size()))
 
 def application(environ, start_response):
     response_headers = [('Content-type', 'text/plain')]
     start_response('200 OK', response_headers)
-    print "before defer", time.time()
+    print("before defer", time.time())
     evwsgi.defer(toto, 0.2, False)
     #evwsgi.defer(toto, 1, True)
-    print "after defer", time.time()
-    return ["hello word!!"]
+    print("after defer", time.time())
+    return [b"hello word!!"]
     
 if __name__=="__main__":
 

@@ -19,7 +19,7 @@ def commit(v):
     global count
     con.commit()
     time.sleep(0.1)
-    #print "commit"
+    #print("commit")
 
 
 def names(environ, start_response):
@@ -43,7 +43,7 @@ def names(environ, start_response):
         return["Name not found"]
 
 def qsize():
-    print "defer queue size:",evwsgi.defer_queue_size()
+    print("defer queue size:",evwsgi.defer_queue_size())
 
 evwsgi.start("0.0.0.0", "8080")
 evwsgi.set_base_module(base)  
