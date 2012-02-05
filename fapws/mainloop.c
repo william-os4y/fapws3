@@ -340,8 +340,6 @@ int python_handler(struct client *cli)
     if (cli->response_content!=NULL) 
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
-        char *tt;
-        tt = PyBytes_AsChar(pydummy);
         strcpy(cli->response_header,PyBytes_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         Py_DECREF(pydummy);
