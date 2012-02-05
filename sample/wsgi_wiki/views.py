@@ -3,58 +3,63 @@ import string
 import time
 from cgi import parse_qs
 import urllib
-import httplib
+import http.client
 
 from fapws.contrib.headers import redirect
 
 repository = "repository"
 menu = """<a href="/index"><img border="0" src="/static/img/house.png" title="Back to home page"/></a>"""
 def get_status(code):
-    return "%s %s" % (code, httplib.responses[code])
+    return "%s %s" % (code, http.client.responses[code])
 
 
 
 def display(environ, start_response):
-    page = os.path.normpath(environ['PATH_INFO'].replace('..',''))
-    if page[0] not in string.letters:
-        errormsg = "Error: the asked page does not exist"
+    page = environ['PATH_INFO'].decode('utf8')
+    page = os.path.normpath(page.replace('..',''))
+    if page[0] not in string.ascii_letters:
+        errormsg = b"Error: the asked page does not exist"
         #put message in a session
-        print errormsg
+        print(errormsg)
         return redirect(start_response, '/')
     filepage = os.path.join(repository,page)
     if not os.path.isfile(filepage):
         return redirect(start_response, '/edit?page=%s' % page)
-    content = open(filepage).read()
+    content = open(filepage,"rb").read()
+    scontent = content.decode('utf-8')
     mnu = menu + """, <a href="/edit?page=%s"><img border="0" src="/static/img/application_edit.png"title="Edit this page"/></a>""" % page
-    tmpl = string.Template(open('template/display.html').read()).safe_substitute({'content':content,'page':page,'menu':mnu})
-    start_response(get_status(200), [('Content-Type','text/html')])
+    tmpl = string.Template(open('template/display.html').read()).safe_substitute({'content':scontent,'page':page,'menu':mnu})
+    start_response(get_status(200), [('Content-Type',"text/html; charset=utf-8")])
     return [tmpl]
 
 class Edit:
     def __call__(self, environ, start_response):
         self.start_response = start_response
         self.environ = environ
-        if environ['REQUEST_METHOD'] == "POST":
+        if environ['REQUEST_METHOD'] == b"POST":
             params=environ['fapws.params']
-            page = params.get('page', [''])[0]
-            content = params.get('content', [''])[0]
-            return self.POST(page,content)
+            page = params.get(b'page', [b''])[0]
+            spage = page.decode('utf-8')
+            content = params.get(b'content', [b''])[0]
+            return self.POST(spage,content)
         else:
-            page = environ['fapws.params'].get('page', [''])[0]
-            return self.GET(page)
-    def POST(self, page="", content=""):
+            page = environ['fapws.params'].get(b'page', [b''])[0]
+            spage = page.decode('utf-8')
+            return self.GET(spage)
+    def POST(self, page="", content=b""):
         if page.strip() == "":
             msg = "ERROR!! Page cannot be empty"
-            print "ERROR PAGE empty"
+            print("ERROR PAGE empty")
             return self.GET(page,msg)
         else:
-            if content.strip() == "":
+            if content.strip() == b"":
                 if os.path.isfile(os.path.join(repository, page)):
                     os.unlink(os.path.join(repository,page))
                 return redirect(self.start_response, "/")
             else:
+                fpath = os.path.join(repository,page)
                 try:
-                    f = open(os.path.join(repository,page),"w").write(content)
+                    f = open(fpath,"wb").write(content)
                 except:
                     msg = "Error, wrong page name"
                     return self.GET(page,msg)
@@ -63,13 +68,14 @@ class Edit:
         mnu = menu
         if page:
             mnu += """, <a href="/display/%s"><img border="0" src="/static/img/cancel.png" title="Cancel the editing" /></a>""" % page
-        content = ""
+        content = b""
         if page and os.path.isfile(os.path.join(repository,page)):
-            content = open(os.path.join(repository,page)).read()
+            content = open(os.path.join(repository,page),"rb").read()
         else:
             msg = "This page does not exist, do you want to create it?"
-        tmpl = string.Template(open('template/edit.html').read()).safe_substitute({'menu':mnu,'content':content,'page':page,'msg':msg})
-        self.start_response(get_status(200), [('Content-Type','text/html')])    
+        scontent = content.decode('utf-8')
+        tmpl = string.Template(open('template/edit.html').read()).safe_substitute({'menu':mnu,'content':scontent,'page':page,'msg':msg})
+        self.start_response(get_status(200), [('Content-Type','text/html; charset=utf-8')])    
         return [tmpl]
 
 def index(environ, start_response):
