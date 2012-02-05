@@ -25,11 +25,11 @@ class Staticfile:
     NOTE: you must be consistent between /rootpath/ and /static/ concerning the ending "/"
     """
     def __init__(self, rootpath=b"", maxage=None):
-        self.rootpath = rootpath
+        self.rootpath = convert_to_bytes(rootpath)
         self.maxage = maxage
 
     def __call__(self, environ, start_response):
-        fpath = self.rootpath + environ['PATH_INFO']
+        fpath = self.rootpath + convert_to_bytes(environ['PATH_INFO'])
         try:
             f = open(fpath, "rb")
         except:
@@ -42,7 +42,6 @@ class Staticfile:
             if self.maxage:
                 headers.append((b'Cache-control', b'max-age=' + convert_to_bytes(int(self.maxage + time.time()))))
             #print "NEW", environ['fapws.uri']
-            print("FPATH", fpath)
             ftype = mimetypes.guess_type(fpath.decode('utf8'))[0]
             headers.append((b'Content-Type', convert_to_bytes(ftype)))
             headers.append((b'ETag', convert_to_bytes(fmtime)))
