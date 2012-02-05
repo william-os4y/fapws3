@@ -34,7 +34,7 @@ def names(environ, start_response):
 
 def commit():
     con.commit()
-    print "commit"
+    print("commit")
 
     
 #he following trigger a commit every 2 seconds    
