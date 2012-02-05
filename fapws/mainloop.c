@@ -87,7 +87,7 @@ void close_connection(struct client *cli)
         Py_DECREF(cli->response_content_obj);
     }
     if (cli->response_fp){
-        //free(cli->response_fp);
+        free(cli->response_fp);
     }
     close(cli->fd);
     free(cli);
@@ -361,7 +361,7 @@ int python_handler(struct client *cli)
              PyObject *pyerrormsg_method=PyObject_GetAttrString(py_base_module,"redirectStdErr");
              PyObject *pyerrormsg=PyObject_CallFunction(pyerrormsg_method, NULL);
              Py_DECREF(pyerrormsg_method);
-             //Py_DECREF(pyerrormsg);
+             if (pyerrormsg) Py_DECREF(pyerrormsg);
              PyErr_Print();
              PyObject *pysys=PyObject_GetAttrString(py_base_module,"sys");
              PyObject *pystderr=PyObject_GetAttrString(pysys,"stderr");
@@ -592,7 +592,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 }
                 if ((int)len<MAX_BUFF)
                 {
-                    //we have send the whole file
+                    //we have sent the whole file
                     stop=2;
                 }
             }

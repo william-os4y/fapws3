@@ -50,5 +50,6 @@ class Staticfile:
             return f
         else:
             #print "SAME", environ['fapws.uri']
+            f.close()
             start_response(b'304 Not Modified', [])
             return []
