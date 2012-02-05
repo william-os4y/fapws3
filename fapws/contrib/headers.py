@@ -12,6 +12,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from fapws.compat import convert_to_bytes
 
 
 def redirect(start_response, location, permanent=None):
