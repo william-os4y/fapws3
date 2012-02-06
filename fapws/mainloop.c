@@ -87,7 +87,7 @@ void close_connection(struct client *cli)
         Py_DECREF(cli->response_content_obj);
     }
     if (cli->response_fp){
-        free(cli->response_fp);
+        Py_DECREF(cli->response_fp);
     }
     close(cli->fd);
     free(cli);
@@ -534,6 +534,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 int buflen;
                 res_trsf = PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen);
 #elif PY_MAJOR_VERSION >= 3
+                //TODO: should not be a PyBytes_AsChar ????
                 Py_ssize_t buflen;
                 if (!PyBytes_Check(pydummy))
                 //we have to transform the object into a Bytes object
@@ -575,11 +576,20 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         {
             if (cli->response_iter_sent==-1) // we need to initialise the file descriptor
             {
-                cli->response_fp=PyFile_AsFile(cli->response_content);
+                if (PyObject_HasAttrString(cli->response_content, "read"))
+                {
+                     cli->response_fp = PyObject_GetAttrString(cli->response_content, "read");
+                } else {
+                     printf("Your file object does not has a read method!!!!\n");
+                     stop = 2;
+                }
             }
             cli->response_iter_sent++;
-            char buff[MAX_BUFF]="";  
-            size_t len=fread(buff, sizeof(char), MAX_BUFF, cli->response_fp);
+            char *buff=NULL;  
+            PyObject *pydummy = PyObject_CallFunction(cli->response_fp, "n", MAX_BUFF);
+            buff = PyBytes_AsChar(pydummy);
+            size_t len = strlen(buff);
+            Py_DECREF(pydummy);
             if ((int)len==0)
             {
                 stop=2;
@@ -596,7 +606,6 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                     stop=2;
                 }
             }
-            //free(buff);
         } 
         else if ((cli->response_content_obj!=NULL) && (PyIter_Check(cli->response_content_obj))) 
         {
