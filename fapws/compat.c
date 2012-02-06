@@ -26,7 +26,7 @@ char *PyBytes_AsChar(PyObject *pyobj)
 {
    
 #if PY_MAJOR_VERSION >= 3
-   char *buf;
+   char *buf=NULL;
    if (!pyobj)
        printf("You are trying to convert a NULL object!!\n");
    
