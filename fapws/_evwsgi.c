@@ -245,11 +245,11 @@ static PyObject *py_set_base_module(PyObject *self, PyObject *args)
 
     //Get the version from the config.py file
     PyObject *pyver=PyObject_GetAttrString(py_config_module,"SERVER_IDENT");
-    VERSION = PyString_AsString(pyver);
+    VERSION = PyBytes_AsString(pyver);
  
     //get the date format
     PyObject *pydateformat=PyObject_GetAttrString(py_config_module,"date_format");
-    date_format=PyString_AsString(pydateformat);
+    date_format=PyBytes_AsString(pydateformat);
     
     return Py_None;    
 }
@@ -327,7 +327,7 @@ static PyObject *py_add_timer_cb(PyObject *self, PyObject *args)
         printf("Limit of maximum %i timers has been reached\n", list_timers_i);
     }
     
-    return PyInt_FromLong(list_timers_i);    
+    return PyLong_FromLong(list_timers_i);    
 }
 
 /*

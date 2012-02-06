@@ -41,7 +41,7 @@ char *PyBytes_AsChar(PyObject *pyobj)
        buf = PyBytes_AsString(pyobj); 
    }
 #else
-   char *buf = PyString_AsString(pyobj); 
+   char *buf = PyBytes_AsString(pyobj); 
 #endif
    return buf;
 }

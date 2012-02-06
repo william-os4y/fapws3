@@ -244,19 +244,19 @@ int python_handler(struct client *cli)
     //  2ter) we treat directly the OPTIONS command
     if (strcmp(cli->cmd,"OPTIONS")==0)
     {
-        pydummy=PyString_FromFormat("HTTP/1.0 200 OK\r\nServer: %s\r\nAllow: ", VERSION) ;
+        pydummy=PyBytes_FromFormat("HTTP/1.0 200 OK\r\nServer: %s\r\nAllow: ", VERSION) ;
         PyObject *pyitem; 
         int index, max;
         max = PyList_Size(pysupportedhttpcmd);
         for (index=0; index<max; index++)
         {
             pyitem=PyList_GetItem(pysupportedhttpcmd, index);  // no need to decref pyitem
-            //PyString_Concat(&pydummy, PyObject_Str(pyitem));
-            PyString_Concat(&pydummy, pyitem);
+            //PyBytes_Concat(&pydummy, PyObject_Bytes(pyitem));
+            PyBytes_Concat(&pydummy, pyitem);
             if (index<max-1)
-               PyString_Concat(&pydummy, PyBytes_FromChar(", "));
+               PyBytes_Concat(&pydummy, PyBytes_FromChar(", "));
         }
-        PyString_Concat(&pydummy, PyBytes_FromChar("\r\nContent-Length: 0\r\n\r\n"));
+        PyBytes_Concat(&pydummy, PyBytes_FromChar("\r\nContent-Length: 0\r\n\r\n"));
         strcpy(cli->response_header,PyBytes_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         cli->response_content=PyList_New(0);
@@ -339,7 +339,7 @@ int python_handler(struct client *cli)
     Py_XDECREF(cli->wsgi_cb);
     if (cli->response_content!=NULL) 
     {
-        PyObject *pydummy = PyObject_Str(pystart_response);
+        PyObject *pydummy = PyObject_Bytes(pystart_response);
         strcpy(cli->response_header,PyBytes_AsChar(pydummy));
 	cli->response_header_length=strlen(cli->response_header);
         Py_DECREF(pydummy);
@@ -532,7 +532,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 int res_trsf = 0;
 #if (PY_VERSION_HEX < 0x02050000)
                 int buflen;
-                res_trsf = PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen);
+                res_trsf = PyBytes_AsStringAndSize(pydummy, (const void **) &buff, &buflen);
 #elif PY_MAJOR_VERSION >= 3
                 Py_ssize_t buflen;
                 if (!PyBytes_Check(pydummy))
@@ -549,7 +549,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 }
 #else
                 Py_ssize_t buflen;
-                res_trsf = PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen);
+                res_trsf = PyBytes_AsStringAndSize(pydummy, (const void **) &buff, &buflen);
 #endif
                 if (res_trsf==0)
                 {
@@ -621,10 +621,10 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 char *buff;
 #if (PY_VERSION_HEX < 0x02050000)
                 int buflen;
-                if (PyObject_AsReadBuffer(pyelem, (const void **) &buff, &buflen)==0)
+                if (PyBytes_AsStringAndSize(pyelem, (const void **) &buff, &buflen)==0)
 #else
                 Py_ssize_t buflen;
-                if (PyObject_AsReadBuffer(pyelem, (const void **) &buff, &buflen)==0)
+                if (PyBytes_AsStringAndSize(pyelem, (const void **) &buff, &buflen)==0)
 #endif
                 {
                     // if this is a readable buffer, we send it. Other else, we ignore it.

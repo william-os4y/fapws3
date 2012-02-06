@@ -5,19 +5,18 @@
 #define MAXHEADER 4096
 
 #if PY_MAJOR_VERSION >= 3
-
-
 #define IS_PY3K
-#define PyString_AsString PyBytes_AsString
-#define PyString_FromString PyBytes_FromString
-#define PyString_FromStringAndSize PyBytes_FromStringAndSize
-#define PyString_FromFormat PyBytes_FromFormat
-#define PyInt_FromString PyLong_FromString
-#define PyInt_FromLong PyLong_FromLong
-#define PyString_Concat PyBytes_Concat
-#define PyBuffer_FromMemory PyBytes_FromStringAndSize
-#define PyObject_AsReadBuffer PyBytes_AsStringAndSize
-#define PyObject_Str PyObject_Bytes
+#else
+#define PyBytes_AsString PyString_AsString 
+#define PyBytes_FromString PyString_FromString 
+#define PyBytes_FromStringAndSize PyString_FromStringAndSize 
+#define PyBytes_FromFormat PyString_FromFormat 
+#define PyLong_FromString PyInt_FromString 
+#define PyLong_FromLong PyInt_FromLong 
+#define PyBytes_Concat PyString_Concat 
+#define PyBytes_FromStringAndSize PyBuffer_FromMemory 
+#define PyBytes_AsStringAndSize PyObject_AsReadBuffer 
+#define PyObject_Bytes PyObject_Str 
 #endif 
 
 

@@ -275,7 +275,7 @@ PyObject * header_to_dict (struct client *cli)
            pyval = PyBytes_FromChar(major_minor);
            PyDict_SetItemString(pydict, "fapws.major_minor", pyval);
            Py_DECREF(pyval);
-           pyval = PyString_FromStringAndSize(data, j-1-4); //remove "/1.1" for example
+           pyval = PyBytes_FromStringAndSize(data, j-1-4); //remove "/1.1" for example
            PyDict_SetItemString(pydict, "wsgi.url_scheme", pyval);
            Py_DECREF(pyval);
            pyval = PyBytes_FromChar(data); 
@@ -421,7 +421,7 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     }
     char *content_length_str = PyBytes_AsChar(pydummy);
     int content_length = atoi(content_length_str);
-    pydummy = PyInt_FromString(content_length_str, NULL, 10);
+    pydummy = PyLong_FromString(content_length_str, NULL, 10);
     PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy); 
     Py_DECREF(pydummy);
 
@@ -429,12 +429,12 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     Py_INCREF(pystringio);
     PyObject *pystringio_write=PyObject_GetAttrString(pystringio, "write");
     Py_DECREF(pystringio);
-    pydummy = PyBuffer_FromMemory(cli->input_body, content_length);
+    pydummy = PyBytes_FromStringAndSize(cli->input_body, content_length);
     PyObject_CallFunction(pystringio_write, "(O)", pydummy);
     Py_DECREF(pydummy);
     Py_DECREF(pystringio_write);
     PyObject *pystringio_seek=PyObject_GetAttrString(pystringio, "seek");
-    pydummy=PyInt_FromString("0", NULL, 10);
+    pydummy=PyLong_FromString("0", NULL, 10);
     PyObject_CallFunction(pystringio_seek, "(O)", pydummy);
     Py_DECREF(pydummy);
     Py_DECREF(pystringio_seek);
