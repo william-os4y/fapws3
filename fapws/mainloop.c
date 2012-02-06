@@ -534,11 +534,11 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 int buflen;
                 res_trsf = PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen);
 #elif PY_MAJOR_VERSION >= 3
-                //TODO: should not be a PyBytes_AsChar ????
                 Py_ssize_t buflen;
                 if (!PyBytes_Check(pydummy))
                 //we have to transform the object into a Bytes object
                 {
+                    printf("We find a non bytes object !!!!. We convert it with UTF-8. Please use Bytes for all your objects\n");
                     PyObject *pydummy2 = PyUnicode_AsUTF8String(pydummy);
                     res_trsf = PyBytes_AsStringAndSize(pydummy2, (const void **) &buff, &buflen);
                     Py_DECREF(pydummy2);
