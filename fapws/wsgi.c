@@ -275,12 +275,14 @@ PyObject * header_to_dict (struct client *cli)
            pyval = PyBytes_FromChar(major_minor);
            PyDict_SetItemString(pydict, "fapws.major_minor", pyval);
            Py_DECREF(pyval);
-           pyval = PyBytes_FromStringAndSize(data, j-1-4); //remove "/1.1" for example
-           PyDict_SetItemString(pydict, "wsgi.url_scheme", pyval);
-           Py_DECREF(pyval);
            pyval = PyBytes_FromChar(data); 
            PyDict_SetItemString(pydict, "SERVER_PROTOCOL", pyval);
            PyDict_SetItemString(pydict, "REQUEST_PROTOCOL", pyval);
+           Py_DECREF(pyval);
+           data[j-1-4]='\0'; //remove "/1.1" for example
+           //printf("SCHEME:%s***\n",data); 
+           pyval = PyBytes_FromChar(data); 
+           PyDict_SetItemString(pydict, "wsgi.url_scheme", pyval);
            Py_DECREF(pyval);
            j=0;
          }
