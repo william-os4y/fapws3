@@ -12,9 +12,13 @@ import fapws.basestr
 import fapws.contrib
 import fapws.contrib.views
 import sys
-import http.client
+if sys.version_info[0] > 2:
+    import http.client as http_client
+    import gzip
+else:
+    import httplib as http_client
+
 from fapws.compat import convert_to_bytes
-import gzip
 
 
 TIMEOUT=20
@@ -39,7 +43,7 @@ def generic(environ, start_response):
     else:
         host=environ["HTTP_HOST"]
         port=80
-    con=http.client.HTTPConnection(host,port, timeout=TIMEOUT)
+    con=http_client.HTTPConnection(host,port, timeout=TIMEOUT)
     print(environ["fapws.uri"])
     path=environ["fapws.uri"][len(host)+len(environ["wsgi.url_scheme"])+3:]
     params=environ["wsgi.input"].read()
@@ -58,7 +62,7 @@ def generic(environ, start_response):
     for key,val in res.getheaders():
         resp_headers[key.upper()]=val
     if resp_headers.get('CONTENT-TYPE','').lower().startswith("text/html") and res.status==200:
-        if "gzip" in resp_headers.get('CONTENT-ENCODING',''):
+        if (sys.version_info[0] > 2) and ("gzip" in resp_headers.get('CONTENT-ENCODING','')):
             data = gzip.decompress(content)
         else:
             data = content 
