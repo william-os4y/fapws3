@@ -173,6 +173,8 @@ This procedure transform the header to something required by wsgi.
 */
 void transform_header_key_to_wsgi_key(char *src, char *dest)
 {
+    char *start;
+    start = dest;
     *dest++='H';
     *dest++='T';
     *dest++='T';
@@ -184,6 +186,7 @@ void transform_header_key_to_wsgi_key(char *src, char *dest)
         src++;  
     }
     *dest = '\0';
+    dest = start;  //we reset the pointer to the begining of the string
 }
 
 
