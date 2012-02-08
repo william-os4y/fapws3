@@ -588,9 +588,9 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             }
             cli->response_iter_sent++;
             char *buff=NULL;  
-            PyObject *pydummy = PyObject_CallFunction(cli->response_fp, "n", MAX_BUFF);
-            buff = PyBytes_AsChar(pydummy);
-            size_t len = strlen(buff);
+            PyObject *pydummy = PyObject_CallFunction(cli->response_fp, "i", MAX_BUFF);
+            buff = PyBytes_AsString(pydummy);
+            size_t len = PyBytes_GET_SIZE(pydummy);
             Py_DECREF(pydummy);
             if ((int)len==0)
             {
