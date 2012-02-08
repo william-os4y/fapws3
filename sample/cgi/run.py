@@ -15,7 +15,7 @@ def start():
     
     hello=cgiapp.CGIApplication("./test.cgi")
     evwsgi.wsgi_cb(("/hellocgi",hello))
-    testphp=cgiapp.CGIApplication("/tmp/test.php")
+    testphp=cgiapp.CGIApplication("./test.php")
     evwsgi.wsgi_cb(("/testphp",testphp))
     
         
