@@ -17,6 +17,7 @@
 #define PyBytes_FromStringAndSize PyBuffer_FromMemory 
 #define PyBytes_AsStringAndSize PyObject_AsReadBuffer 
 #define PyObject_Bytes PyObject_Str 
+#define PyUnicode_FromString PyString_FromString
 #endif 
 
 
