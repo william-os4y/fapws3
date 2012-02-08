@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import fapws._evwsgi as evwsgi
 import fapws

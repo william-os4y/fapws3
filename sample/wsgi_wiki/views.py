@@ -1,21 +1,31 @@
+# -*- coding: utf-8 -*-
+
 import os.path
 import string
 import time
 from cgi import parse_qs
 import urllib
-import http.client
+import sys
+if sys.version_info[0] > 2:
+    import http.client as http_client
+else:
+    import httplib as http_client
 
 from fapws.contrib.headers import redirect
 
 repository = "repository"
 menu = """<a href="/index"><img border="0" src="/static/img/house.png" title="Back to home page"/></a>"""
 def get_status(code):
-    return "%s %s" % (code, http.client.responses[code])
+    return "%s %s" % (code, http_client.responses[code])
 
-
+def convert2str(data):
+    if sys.version_info[0] > 2:
+        return data.decode('utf-8')
+    else:
+        return data
 
 def display(environ, start_response):
-    page = environ['PATH_INFO'].decode('utf8')
+    page = convert2str(environ['PATH_INFO'])
     page = os.path.normpath(page.replace('..',''))
     if page[0] not in string.ascii_letters:
         errormsg = b"Error: the asked page does not exist"
@@ -26,7 +36,7 @@ def display(environ, start_response):
     if not os.path.isfile(filepage):
         return redirect(start_response, '/edit?page=%s' % page)
     content = open(filepage,"rb").read()
-    scontent = content.decode('utf-8')
+    scontent = convert2str(content)
     mnu = menu + """, <a href="/edit?page=%s"><img border="0" src="/static/img/application_edit.png"title="Edit this page"/></a>""" % page
     tmpl = string.Template(open('template/display.html').read()).safe_substitute({'content':scontent,'page':page,'menu':mnu})
     start_response(get_status(200), [('Content-Type',"text/html; charset=utf-8")])
@@ -39,12 +49,12 @@ class Edit:
         if environ['REQUEST_METHOD'] == b"POST":
             params=environ['fapws.params']
             page = params.get(b'page', [b''])[0]
-            spage = page.decode('utf-8')
+            spage = convert2str(page)
             content = params.get(b'content', [b''])[0]
             return self.POST(spage,content)
         else:
             page = environ['fapws.params'].get(b'page', [b''])[0]
-            spage = page.decode('utf-8')
+            spage = convert2str(page)
             return self.GET(spage)
     def POST(self, page="", content=b""):
         if page.strip() == "":
@@ -73,7 +83,7 @@ class Edit:
             content = open(os.path.join(repository,page),"rb").read()
         else:
             msg = "This page does not exist, do you want to create it?"
-        scontent = content.decode('utf-8')
+        scontent = convert2str(content)
         tmpl = string.Template(open('template/edit.html').read()).safe_substitute({'menu':mnu,'content':scontent,'page':page,'msg':msg})
         self.start_response(get_status(200), [('Content-Type','text/html; charset=utf-8')])    
         return [tmpl]
