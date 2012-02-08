@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import sys
-if sys.version_info[0] > 2:
-    import http.client as http_client
-    import urllib.parse as urllib_parse
-else:
-    import httplib as http_client
-    import urllib as urllib_parse
+if sys.version_info[0] == 3:
+    print("This script is specific for PYthon2.x !!! With Python3.x, please use test.py ")
+    sys.exit()
+
+import httplib as http_client
+import urllib as urllib_parse
 
 import os.path
 

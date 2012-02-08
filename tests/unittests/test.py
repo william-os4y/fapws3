@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import sys
-if sys.version_info[0] > 2:
-    import http.client as http_client
-    import urllib.parse as urllib_parse
-else:
-    import httplib as http_client
-    import urllib as urllib_parse
+if sys.version_info[0] == 2:
+    print("This script is not compatible with Python2.x!!!! Please use the specific one: test27.py")
+    sys.exit()
+
+import http.client as http_client
+import urllib.parse as urllib_parse
 
 import os.path
 
