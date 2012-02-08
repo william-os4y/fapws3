@@ -18,8 +18,14 @@ import os
 import sys
 from fapws.compat import convert_to_bytes
 
+if sys.version_info[0] > 2:
+    sys_stdout = sys.stdout.buffer
+else:
+    sys_stdout = sys.stdout
+
+
 class Log:
-    def __init__(self, output=sys.stdout.buffer):
+    def __init__(self, output=sys_stdout):
         self.output = output
 
     def __call__(self, f):
@@ -38,7 +44,7 @@ class Log:
                 size = b"-"
             #this is provided by a proxy or direct
             remote_host = environ.get('HTTP_X_FORWARDED_FOR', environ['fapws.remote_addr'])
-            self.output.write(remote_host + b" " + environ['HTTP_HOST']+ b" - [" + tts + b" GMT] \"" + environ['REQUEST_METHOD'] + b" " + environ['fapws.uri'] + b" " + environ['wsgi.url_scheme'] + b"\" " + start_response.status_code + b" " + size + b" \"" + (environ.get("HTTP_REFERER") or b"-") + b"\" \"" + (environ.get('HTTP_USER_AGENT') or b"-") + b"\"\n" )
+            self.output.write(remote_host + b" " + environ['HTTP_HOST']+ b" - [" + tts + b" GMT] \"" + environ['REQUEST_METHOD'] + b" " + environ['fapws.uri'] + b" " + bytes(environ['wsgi.url_scheme']) + b"\" " + start_response.status_code + b" " + size + b" \"" + (environ.get("HTTP_REFERER") or b"-") + b"\" \"" + (environ.get('HTTP_USER_AGENT') or b"-") + b"\"\n" )
             self.output.flush()
             return res
         return func

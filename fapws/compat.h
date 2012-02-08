@@ -1,6 +1,6 @@
+#if PY_MAJOR_VERSION >= 3
 int PyFile_Check(PyObject *obj);
-
-FILE *PyFile_AsFile(PyObject *pfd);
+#endif
 
 char *PyBytes_AsChar(PyObject *pyobj);
 

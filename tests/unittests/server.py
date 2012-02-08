@@ -22,7 +22,10 @@ def env(environ, start_response):
     for key,val in environ.items():
         val=str(val).replace('\r','\\r')
         val=val.replace('\n','\\n')
-        res.append(bytes("%s:%s\n" % (key,val),"utf-8"))
+        if sys.version_info[0] > 2:
+            res.append(bytes("%s:%s\n" % (key,val), "utf-8"))
+        else:
+            res.append("%s:%s\n" % (key,val))
     return res
 
 def hello(environ, start_response):
@@ -77,7 +80,10 @@ def testpost(environ, start_response):
     else:
         res={}
     ret = "OK. params are:%s" % (res)
-    return [bytes(ret,"utf-8")]
+    if sys.version_info[0] > 2:
+        return [bytes(ret, "utf-8")]
+    else:
+        return [ret]
 
 @zip.Gzip()    
 def staticlongzipped(environ, start_response):

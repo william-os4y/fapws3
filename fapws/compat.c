@@ -12,24 +12,16 @@ int PyFile_Check(PyObject *obj)
 {
     return PyObject_IsInstance(obj, (PyObject *)&PyIOBase_Type);
 }
-
-FILE *PyFile_AsFile(PyObject *pfd)
-{
-   FILE *fp;
-   int fd = PyObject_AsFileDescriptor(pfd);
-   fp = fdopen(fd, "r");
-   return fp;
-}
 #endif
 
 char *PyBytes_AsChar(PyObject *pyobj)
 {
    
-#if PY_MAJOR_VERSION >= 3
    char *buf=NULL;
    if (!pyobj)
        printf("You are trying to convert a NULL object!!\n");
    
+#if PY_MAJOR_VERSION >= 3
    if (!PyBytes_Check(pyobj))
    {
        PyObject *pydummy = PyUnicode_AsEncodedString(pyobj, "utf-8", "Error"); 
@@ -41,7 +33,7 @@ char *PyBytes_AsChar(PyObject *pyobj)
        buf = PyBytes_AsString(pyobj); 
    }
 #else
-   char *buf = PyBytes_AsString(pyobj); 
+   buf = PyBytes_AsString(pyobj); 
 #endif
    return buf;
 }
@@ -53,7 +45,7 @@ PyObject *PyBytes_FromChar(char * buf)
 #if PY_MAJOR_VERSION >= 3
    pyres = PyBytes_FromString(buf);
 #else
-   pyres = PyString_FromChar(buf):
+   pyres = PyString_FromString(buf);
 #endif
    return pyres;
 }

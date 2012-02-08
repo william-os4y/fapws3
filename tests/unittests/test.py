@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
-import http.client
-import urllib.request, urllib.parse, urllib.error
+
+import sys
+if sys.version_info[0] > 2:
+    import http.client as http_client
+    import urllib.parse as urllib_parse
+else:
+    import httplib as http_client
+    import urllib as urllib_parse
+
 import os.path
 
 import os
-import sys
 
 import _raw_send
 
@@ -31,14 +37,14 @@ def test(search, test, data):
         print("SUCCESS")
         successes+=1
 
-class UHTTPConnection(http.client.HTTPConnection):
+class UHTTPConnection(http_client.HTTPConnection):
     """Subclass of Python library HTTPConnection that
        uses a unix-domain socket.
        borrowed from http://7bits.nl/blog/2007/08/15/http-on-unix-sockets-with-python
     """
  
     def __init__(self, path):
-        http.client.HTTPConnection.__init__(self, 'localhost')
+        http_client.HTTPConnection.__init__(self, 'localhost')
         self.path = path
  
     def connect(self):
@@ -49,7 +55,7 @@ class UHTTPConnection(http.client.HTTPConnection):
 if socket_server:
     con = UHTTPConnection("\0/org/fapws3/server")
 else:
-    con = http.client.HTTPConnection("127.0.0.1:8080")
+    con = http_client.HTTPConnection("127.0.0.1:8080")
     
 if 1:
   print("=== Normal get ===")
@@ -122,14 +128,14 @@ if 1:
   test("304", response.status==304, "304")
 
   print("=== Post without length ===")
-  params = urllib.parse.urlencode({'var1': 'value1', 'var2': 'value2'})
+  params = urllib_parse.urlencode({'var1': 'value1', 'var2': 'value2'})
   con.request("POST", "/testpost")
   response=con.getresponse()
   content=response.read()
   test(b"Length Required", response.status==411, content)
 
   print("=== Post with length ===")
-  params = urllib.parse.urlencode({'var1': 'value1', 'var2': 'value2'})
+  params = urllib_parse.urlencode({'var1': 'value1', 'var2': 'value2'})
   headers = {"Content-type": "application/x-www-form-urlencoded", 
             "Accept": "text/plain"}
   con.request("POST", "/testpost", params, headers) #in this case http.client send automatically the content-length header

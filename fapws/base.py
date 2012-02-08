@@ -15,19 +15,31 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import datetime
-from http.cookies import SimpleCookie, CookieError
-from io import BytesIO, StringIO
+
+import sys
+if sys.version_info[0] > 2:
+    from http.cookies import SimpleCookie, CookieError
+    from io import BytesIO, StringIO
+    import http as http_client
+else:
+    from Cookie import SimpleCookie, CookieError
+    try:
+        from cStringIO import StringIO
+    except ImportError:
+        from StringIO import StringIO
+    BytesIO = StringIO
+    import httplib as http_client
+
 import sys
 import string
 import traceback
 import time
 
 from fapws import config
-import http
 from fapws.compat import convert_to_bytes
 
 def get_status(code):
-    return "%s %s" % (code, http.client.responses[code])
+    return "%s %s" % (code, http_client.responses[code])
 
 
 class Environ(dict):
@@ -118,7 +130,10 @@ class Start_response:
         res += b"\r\n"
         return res
     def __str__(self):
-        return str(self._result_(),'utf8')
+        if sys.version_info[0] > 2:
+             return str(self._result_(),'utf8')
+        else:
+             return str(self._result_())
     def __bytes__(self):
         return self._result_()
 

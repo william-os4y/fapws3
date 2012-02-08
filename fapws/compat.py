@@ -15,13 +15,19 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-
+import sys
 def convert_to_bytes(data):
     if type(data)==bytes:   
         return data
     if type(data)==str:
-        return bytes(data,'utf8')
+        if sys.version_info[0] > 2:
+            return bytes(data,'utf8')
+        else:
+            return data
     else:
         conv = str(data)
-        return bytes(conv,'utf8')
+        if sys.version_info[0] > 2:
+            return bytes(conv,'utf8')
+        else:
+            return conv
 
