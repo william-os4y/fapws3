@@ -1,0 +1,11 @@
+to test this script, you have to chenge the parameters of your browser. 
+After having started the scrip, adapt the HTTP proxy setting your your preferred browser to: 127.0.0.1:8080
+
+Now, every requested page by your browser will be, first, treted by FAPWS. Cool, no ?
+
+Every pages containing the word "sex" will be blocked. 
+
+
+Note:
+1. does not work with HTTPS. 
+2. with python2.x gzip pages does not work
