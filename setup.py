@@ -80,12 +80,12 @@ if sys.platform == "darwin":
 else:
     search_include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include','/usr/pkg/include/ev'])
 
-#version=platform.python_version_tuple()
-#if int(version[0])==2 and int(version[1])>=4:
-#    print("Find python 2.4 or higher")
-#else:
-#    print("Fapws has been developped with python 2.4 or higher (not yet python 3.X). Instead we found python %s.%s" % (version[0], version[1]))
-#    sys.exit(1)
+version=platform.python_version_tuple()
+if (int(version[0])==2 and int(version[1])>=7) or (int(version[0])>=3):
+    print("Find python 2.7 or higher")
+else:
+    print("Fapws has been developped with python 2.7 or higher (even python 3.X). Instead we found python %s.%s" % (version[0], version[1]))
+    sys.exit(1)
 
 
 res=find_file('ev.h',search_include_dirs)
