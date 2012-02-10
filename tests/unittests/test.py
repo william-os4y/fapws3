@@ -230,6 +230,13 @@ Hello world
   content=response.read()
   test(b"Not Implemented", response.status==501 , content)
   
+  print("=== Very long GET  ===")
+  url = "/env?var=" + "to"*2056
+  con.request("GET", url)
+  response=con.getresponse()
+  content=response.read()
+  test(b"tototototo", response.status==200 , content)
+
 
 
 print("==================")
