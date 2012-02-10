@@ -224,7 +224,12 @@ Hello world
   content=response.read()
   test("Not Implemented", response.status==501 , content)
   
-
+  print("=== Very long GET ===")
+  url = "/env?var=" + "to"*2056
+  con.request("GET", url)
+  response=con.getresponse()
+  content=response.read()
+  test("tototototo", response.status==200 , content)
 
 print "=================="
 print "TOTAL successes:", successes
