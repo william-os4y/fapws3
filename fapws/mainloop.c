@@ -298,13 +298,7 @@ int python_handler(struct client *cli)
     update_environ(pyenviron, pydict, "update_from_request");
     Py_DECREF(pydict);
     // 7) build response object
-    PyObject *pystart_response_class=PyObject_GetAttrString(py_base_module, "Start_response");
-#if PY_MAJOR_VERSION >= 3
-    PyObject *pystart_response=PyObject_CallObject(pystart_response_class, NULL);
-#else
-    PyObject *pystart_response=PyInstance_New(pystart_response_class, NULL, NULL);
-#endif
-    Py_DECREF(pystart_response_class);
+    PyObject *pystart_response=PyObject_CallMethod(py_base_module, "Start_response", NULL);
     if (!pystart_response)
     {
         PyErr_Print();
@@ -363,22 +357,14 @@ int python_handler(struct client *cli)
         if (PyErr_Occurred()) 
         { 
              //get_traceback();py_b
-             PyObject *pyerrormsg_method=PyObject_GetAttrString(py_base_module,"redirectStdErr");
-             PyObject *pyerrormsg=PyObject_CallFunction(pyerrormsg_method, NULL);
-             Py_DECREF(pyerrormsg_method);
+             PyObject *pyerrormsg=PyObject_CallMethod(py_base_module, "redirectStdErr", NULL);
              if (pyerrormsg) Py_DECREF(pyerrormsg);
              PyErr_Print();
              PyObject *pysys=PyObject_GetAttrString(py_base_module,"sys");
              PyObject *pystderr=PyObject_GetAttrString(pysys,"stderr");
              Py_DECREF(pysys);
-/*             PyObject *pyclose_method=PyObject_GetAttrString(pystderr, "close");
-             PyObject *pyclose=PyObject_CallFunction(pyclose_method, NULL);
-             Py_DECREF(pyclose_method);
-             Py_DECREF(pyclose);*/
-             PyObject *pygetvalue=PyObject_GetAttrString(pystderr, "getvalue");
              Py_DECREF(pystderr);
-             PyObject *pyres=PyObject_CallFunction(pygetvalue, NULL);
-             Py_DECREF(pygetvalue);
+             PyObject *pyres=PyObject_CallMethod(pystderr, "getvalue", NULL);
              printf("%s\n", PyBytes_AsChar(pyres));
              //test if we must send it to the page
              PyObject *pysendtraceback = PyObject_GetAttrString(py_config_module,"send_traceback_to_browser");
@@ -658,8 +644,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
       if (cli->response_content!=NULL) {
         if (PyObject_HasAttrString(cli->response_content, "close"))
         {
-            PyObject *pydummy=PyObject_GetAttrString(cli->response_content, "close");
-            PyObject_CallFunction(pydummy, NULL);
+            PyObject *pydummy=PyObject_CallMethod(cli->response_content, "close", NULL);
             Py_DECREF(pydummy);
         }
       }
