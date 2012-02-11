@@ -134,7 +134,7 @@ def start():
     evwsgi.wsgi_cb(("/returnnull", returnnull))
     evwsgi.wsgi_cb(("/returniternull", returniternull))
 
-    evwsgi.set_debug(1)    
+    evwsgi.set_debug(0)    
     evwsgi.run()
     
 
