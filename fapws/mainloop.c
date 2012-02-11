@@ -89,6 +89,7 @@ void close_connection(struct client *cli)
     }
     close(cli->fd);
     free(cli);
+    PyErr_Clear();
 }
 
 
@@ -296,6 +297,11 @@ int python_handler(struct client *cli)
     PyObject *pystart_response_class=PyObject_GetAttrString(py_base_module, "Start_response");
     PyObject *pystart_response=PyInstance_New(pystart_response_class, NULL, NULL);
     Py_DECREF(pystart_response_class);
+    if (PyErr_Occurred()) 
+    {
+             PyErr_Print();
+             return -500;
+    }
     // 7b) add the current date to the response object
     PyObject *py_response_header=PyObject_GetAttrString(pystart_response,"response_headers");
     char *sftime;
@@ -468,7 +474,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         if (ret==0) //look for python callback and execute it
         {
             //uri not found
-            str_append3(response,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ", VERSION ,"\r\n\r\n<html><head><title>Page not found</head><body><p>Page not found!!!</p></body></html>", MAXHEADER);
+            str_append3(response,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ", VERSION ,"\r\n\r\n<html><head><title>Page not found</title></head><body><p>Page not found!!!</p></body></html>", MAXHEADER);
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         } 
@@ -480,7 +486,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         }
         else if (ret==-500)
         {
-            str_append3(response,"HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n<html><head><title>Internal Server Error</head><body><p>Internal Server Error!!!</p></body></html>", MAXHEADER);
+            str_append3(response,"HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n<html><head><title>Internal Server Error</title></head><body><p>Internal Server Error!!!</p></body></html>", MAXHEADER);
             write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
@@ -608,8 +614,8 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         } 
         else 
         {
-            //printf("wsgi output of is neither a list, neither a fileobject, neither an iterable object!!!!!\n");
-            PyErr_SetString(PyExc_TypeError, "Result must be a list, a fileobject or an iterable object");
+            printf("wsgi output of is neither a list, neither a fileobject, neither an iterable object!!!!!\n");
+            //PyErr_SetString(PyExc_TypeError, "Result must be a list, a fileobject or an iterable object");
             stop=1;
         }
     }// end of GET OR POST request
