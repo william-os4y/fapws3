@@ -52,17 +52,20 @@ PyObject *PyBytes_FromChar(char * buf)
 
 int PyDict_SetItemChar(PyObject *pydict, char *key, PyObject *pyval)
 {
-    PyObject *pykey = PyBytes_FromChar(key);
-    PyObject *pyret = PyDict_SetItem(pydict, pykey, pyval);
+    PyObject *pykey;
+    int ret;
+    pykey = PyBytes_FromChar(key);
+    ret = PyDict_SetItem(pydict, pykey, pyval);
     Py_DECREF(pykey);
-    return pyret;
+    return ret;
 }
 
 
 PyObject *PyDict_GetItemChar(PyObject *pydict, char *key)
 {
-    PyObject *pykey = PyBytes_FromChar(key);
-    PyObject *pyret = PyDict_GetItem(pydict, pykey);
+    PyObject *pykey, *pyret;
+    pykey = PyBytes_FromChar(key);
+    pyret = PyDict_GetItem(pydict, pykey);
     Py_DECREF(pykey);
     return pyret;
 }

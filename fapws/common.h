@@ -44,7 +44,7 @@ struct client {
         int response_header_length;
         PyObject *response_content;
         PyObject *response_content_obj;
-        FILE *response_fp; // file of the sent file
+        PyObject *response_fp; 
 };
 
 struct TimerObj {

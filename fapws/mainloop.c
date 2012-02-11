@@ -528,12 +528,12 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 {
                     printf("We find a non bytes object !!!!. We convert it with UTF-8. Please use Bytes for all your objects\n");
                     PyObject *pydummy2 = PyUnicode_AsUTF8String(pydummy);
-                    res_trsf = PyBytes_AsStringAndSize(pydummy2, (const void **) &buff, &buflen);
+                    res_trsf = PyBytes_AsStringAndSize(pydummy2, &buff, &buflen);
                     Py_DECREF(pydummy2);
                 }
                 else
                 { 
-                    res_trsf = PyBytes_AsStringAndSize(pydummy, (const void **) &buff, &buflen);
+                    res_trsf = PyBytes_AsStringAndSize(pydummy, &buff, &buflen);
                 }
 #else
                 Py_ssize_t buflen;
@@ -608,7 +608,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             {
                 char *buff;
                 Py_ssize_t buflen;
-                if (PyBytes_AsStringAndSize(pyelem, (const void **) &buff, &buflen)==0)
+                if (PyBytes_AsStringAndSize(pyelem, &buff, &buflen)==0)
                 {
                     // if this is a readable buffer, we send it. Other else, we ignore it.
                     if (write_cli(cli, buff, buflen, revents)==0)
