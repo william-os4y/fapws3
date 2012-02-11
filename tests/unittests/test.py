@@ -230,14 +230,31 @@ Hello world
   content=response.read()
   test(b"Not Implemented", response.status==501 , content)
   
-  print("=== Very long GET  ===")
+  print("=== Very long GET ===")
   url = "/env?var=" + "to"*2056
   con.request("GET", url)
   response=con.getresponse()
   content=response.read()
   test(b"tototototo", response.status==200 , content)
 
+  print("=== Return Null ===")
+  con.request("GET", "/returnnull")
+  response=con.getresponse()
+  content=response.read()
+  print response.status
+  test(b"", response.status==200 , content)
 
+  print("=== Return None ===")
+  con.request("GET", "/returnnone")
+  response=con.getresponse()
+  content=response.read()
+  test(b"", response.status==200 , content)
+
+  print("=== Return Iter None ===")
+  con.request("GET", "/returniternull")
+  response=con.getresponse()
+  content=response.read()
+  test(b"start", response.status==200 , content)
 
 print("==================")
 print("TOTAL successes:", successes)

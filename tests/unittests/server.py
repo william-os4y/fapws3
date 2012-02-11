@@ -95,8 +95,23 @@ def staticlongzipped(environ, start_response):
     return f
 
 def badscript(environ, start_response):
-    start_reponse('200 OK', [('Content-Type','text/html')])
+    start_reponse(b'200 OK', [(b'Content-Type',b'text/html')])
     return [b"Hello world!!"]
+
+def returnnone(environ, start_response):
+    start_response(b'200 OK', [(b'Content-Type',b'text/html')])
+    return None
+
+def returnnull(environ, start_response):
+    print environ
+    start_response(b'200 OK', [(b'Content-Type',b'text/html')])
+
+def returniternull(environ, start_response):
+    print environ
+    start_response(b'200 OK', [(b'Content-Type',b'text/html')])
+    yield b"start"
+    yield None
+    yield b"tt"
 
 
 
@@ -122,6 +137,9 @@ def start():
     evwsgi.wsgi_cb((b"/staticform", staticform))
     evwsgi.wsgi_cb((b"/testpost", testpost))
     evwsgi.wsgi_cb((b"/badscript", badscript))
+    evwsgi.wsgi_cb((b"/returnnone", returnnone))
+    evwsgi.wsgi_cb((b"/returnnull", returnnull))
+    evwsgi.wsgi_cb((b"/returniternull", returniternull))
 
     evwsgi.set_debug(0)    
     evwsgi.run()
