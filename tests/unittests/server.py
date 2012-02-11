@@ -91,6 +91,21 @@ def badscript(environ, start_response):
     start_reponse('200 OK', [('Content-Type','text/html')])
     return ["Hello world!!"]
 
+def returnnone(environ, start_response):
+    start_response('200 OK', [('Content-Type','text/html')])
+    return None
+
+def returnnull(environ, start_response):
+    print environ
+    start_response('200 OK', [('Content-Type','text/html')])
+
+def returniternull(environ, start_response):
+    print environ
+    start_response('200 OK', [('Content-Type','text/html')])
+    yield "start"
+    yield None
+    yield "tt"
+
 
 
 
@@ -115,8 +130,11 @@ def start():
     evwsgi.wsgi_cb(("/staticform", staticform))
     evwsgi.wsgi_cb(("/testpost", testpost))
     evwsgi.wsgi_cb(("/badscript", badscript))
+    evwsgi.wsgi_cb(("/returnnone", returnnone))
+    evwsgi.wsgi_cb(("/returnnull", returnnull))
+    evwsgi.wsgi_cb(("/returniternull", returniternull))
 
-    evwsgi.set_debug(0)    
+    evwsgi.set_debug(1)    
     evwsgi.run()
     
 
