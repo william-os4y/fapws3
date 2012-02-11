@@ -241,7 +241,6 @@ Hello world
   con.request("GET", "/returnnull")
   response=con.getresponse()
   content=response.read()
-  print response.status
   test(b"", response.status==200 , content)
 
   print("=== Return None ===")
