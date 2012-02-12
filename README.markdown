@@ -79,11 +79,11 @@ shigin : https://github.com/william-os4y/fapws3/pull/21
 
 Aleksey : did extra tests on python 2.4 and python 2.5
 
-Stiletto : Add tuple 
+Liu Qishuai : Code improvement
 
-Liu Qishuai : code improvement
+Stiletto : implementation of tuple
 
-Keith : implement support of sockets
+Keith : Implementation of sockets
 
 License
 -------
