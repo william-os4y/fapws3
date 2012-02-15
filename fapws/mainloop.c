@@ -481,11 +481,8 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             response = malloc(1);
             response[0] = '\0';
             response = str_append(response, "HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ");
-            printf("1:***%s***\n", response);
             response = str_append(response,  VERSION);
-            printf("2:***%s***\n", response);
             response = str_append(response, "\r\n\r\n<html><head><title>Page not found</title></head><body><p>Page not found!!!</p></body></html>");
-            printf("3:***%s***\n", response);
             if (response) write_cli(cli,response, strlen(response), revents);
             else printf("str_append problem in  1\n");
             stop=1;
