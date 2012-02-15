@@ -253,8 +253,8 @@ int python_handler(struct client *cli)
                PyString_Concat(&pydummy, PyString_FromString(", "));
         }
         PyString_Concat(&pydummy, PyString_FromString("\r\nContent-Length: 0\r\n\r\n"));
-        strcpy(cli->response_header,PyString_AsString(pydummy));
-	cli->response_header_length=strlen(cli->response_header);
+        cli->response_header = PyString_AsString(pydummy);
+	cli->response_header_length=(int)PyString_Size(pydummy);
         cli->response_content=PyList_New(0);
         Py_DECREF(pyenviron);
         return 1;
@@ -331,21 +331,24 @@ int python_handler(struct client *cli)
     if (cli->response_content!=NULL) 
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
-        strcpy(cli->response_header,PyString_AsString(pydummy));
-	cli->response_header_length=strlen(cli->response_header);
+        cli->response_header = PyString_AsString(pydummy);
+	cli->response_header_length = (int)PyString_Size(pydummy);
         Py_DECREF(pydummy);
     }
     else 
     //python call return is NULL
     {
-        printf("Python error!!!\n");
-        if (str_append3(cli->response_header,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n", MAXHEADER)<0)
+        printf("Python error!!!%s\n", cli->response_header);
+        cli->response_header = str_append(cli->response_header,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ");
+        cli->response_header = str_append(cli->response_header, VERSION);
+        cli->response_header = str_append(cli->response_header, "\r\n\r\n"); //TODO: use size_t
+        if (cli->response_header == NULL)
         {
-             printf("ERROR!!!! Response header bigger than foreseen:%i", MAXHEADER);
-             printf("HEADER TOP\n%s\nHEADER BOT\n", cli->response_header);
-             return -1;
-        }
-	cli->response_header_length=strlen(cli->response_header);
+            printf("ERROR!!!! Memory allocation error in the Python error handling procedure\n");
+            goto leave_python_handler;
+        } 	
+        cli->response_header_length=strlen(cli->response_header);
+        
         if (PyErr_Occurred()) 
         { 
              //get_traceback();py_b
@@ -393,6 +396,7 @@ int python_handler(struct client *cli)
              Py_DECREF(pydummy);
          }
     }
+leave_python_handler:
     Py_XDECREF(pystart_response);
     Py_XDECREF(pyenviron);
     return 1;
@@ -463,7 +467,7 @@ This is the write call back registered within the event loop
 */
 void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 { 
-    char response[MAXHEADER];
+    char *response = NULL;
     int stop=0; //0: not stop, 1: stop, 2: stop and call tp close
     int ret; //python_handler return
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
@@ -474,27 +478,51 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         if (ret==0) //look for python callback and execute it
         {
             //uri not found
-            str_append3(response,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ", VERSION ,"\r\n\r\n<html><head><title>Page not found</title></head><body><p>Page not found!!!</p></body></html>", MAXHEADER);
-            write_cli(cli,response, strlen(response), revents);
+            response = malloc(1);
+            response[0] = '\0';
+            response = str_append(response, "HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ");
+            printf("1:***%s***\n", response);
+            response = str_append(response,  VERSION);
+            printf("2:***%s***\n", response);
+            response = str_append(response, "\r\n\r\n<html><head><title>Page not found</title></head><body><p>Page not found!!!</p></body></html>");
+            printf("3:***%s***\n", response);
+            if (response) write_cli(cli,response, strlen(response), revents);
+            else printf("str_append problem in  1\n");
             stop=1;
+            free(response);
         } 
         else if (ret==-411)
         {
-            str_append3(response,"HTTP/1.0 411 Length Required\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>", MAXHEADER);
-            write_cli(cli,response, strlen(response), revents);
+            response = malloc(1);
+            response[0] = '\0';
+            response = str_append(response,"HTTP/1.0 411 Length Required\r\nContent-Type: text/html\r\nServer: ");
+            response = str_append(response, VERSION);
+            response = str_append(response, "\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>");
+            if (response) write_cli(cli,response, strlen(response), revents);
+            else printf("str_append problem in  2\n");
             stop=1;
         }
         else if (ret==-500)
         {
-            str_append3(response,"HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n<html><head><title>Internal Server Error</title></head><body><p>Internal Server Error!!!</p></body></html>", MAXHEADER);
-            write_cli(cli,response, strlen(response), revents);
+            response = malloc(1);
+            response[0] = '\0';
+            response = str_append(response,"HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: ");
+            response = str_append(response, VERSION);
+            response = str_append(response, "\r\n\r\n<html><head><title>Internal Server Error</title></head><body><p>Internal Server Error!!!</p></body></html>");
+            if (response) write_cli(cli,response, strlen(response), revents);
+            else printf("str_append problem in  3\n");
             stop=1;
         }
         else if (ret==-501)
         {
             //problem to parse the request
-            str_append3(response,"HTTP/1.0 501 Not Implemented\r\nContent-Type: text/html\r\nServer: ", VERSION, "\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>", MAXHEADER);
-            write_cli(cli,response, strlen(response), revents);
+            response = malloc(1);
+            response[0] = '\0';
+            response = str_append(response,"HTTP/1.0 501 Not Implemented\r\nContent-Type: text/html\r\nServer: ");
+            response = str_append(response, VERSION);
+            response = str_append(response, "\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>");
+            if (response) write_cli(cli,response, strlen(response), revents);
+            else printf("str_append problem in  4\n");
             stop=1;
         }
         else
@@ -744,6 +772,7 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->cmd=NULL;
     cli->uri_path=NULL;
     cli->wsgi_cb=NULL;
+    cli->response_header=malloc(1);
     cli->response_header[0]='\0';
     cli->response_content=NULL;
     cli->response_content_obj=NULL;
