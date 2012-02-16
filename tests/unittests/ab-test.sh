@@ -15,23 +15,20 @@ wait_sockets () {
        os=`netstat -a | wc -l `
     done
     echo "Open sockets: $os is now lower than $MAX_os"
-    echo "################"
 }
 
 system_info () {
     #We just provide some info about the system
     echo "################"
     echo "System: `uname -a`"
-    python --version
-    python -c "import fapws;print(fapws.version)"
-    echo "################"
+    echo "Python: `python -c "import sys;print(sys.version)"` "
+    echo "Fawps3: `python -c "import fapws;print(fapws.version)"` "
 }
 
 display_memory () {
     if [ "$SERVERPID" ]; then
         echo "################"
         ps u $SERVERPID
-        echo "################"
     fi
 }
 
@@ -41,33 +38,40 @@ bench () {
     #
     page=$1
     display_memory
+    echo "################"
     MAX_os=$(expr `netstat -a | wc -l` + 100)
     nice -20 ab -n10000 -c1 http://127.0.0.1:8080/$page 
     display_memory
     wait_sockets
+    echo "================" 
     
     MAX_os=$(expr `netstat -a | wc -l` + 100)
     nice -20 ab -n10000 -c2 http://127.0.0.1:8080/$page 
     display_memory
     wait_sockets
+    echo "================" 
     
     MAX_os=$(expr `netstat -a | wc -l` + 100)
     nice -20 ab -n10000 -c5 http://127.0.0.1:8080/$page
     display_memory
     wait_sockets
+    echo "================" 
     
     MAX_os=$(expr `netstat -a | wc -l` + 100)
     nice -20 ab -n10000 -c10 http://127.0.0.1:8080/$page
     display_memory
     wait_sockets
+    echo "================" 
     
     MAX_os=$(expr `netstat -a | wc -l` + 100)
     nice -20 ab -n10000 -c50 http://127.0.0.1:8080/$page
     display_memory
     wait_sockets
+    echo "================" 
     
     nice -20 ab -n10000 -c100 http://127.0.0.1:8080/$page
     display_memory
+    echo "================" 
 
 }
 
