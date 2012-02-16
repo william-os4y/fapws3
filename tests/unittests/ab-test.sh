@@ -23,6 +23,7 @@ system_info () {
     echo "################"
     echo "System: `uname -a`"
     python --version
+    python -c "import fapws;print(fapws.version)"
     echo "################"
 }
 
