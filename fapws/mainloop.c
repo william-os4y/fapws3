@@ -338,13 +338,15 @@ int python_handler(struct client *cli)
     else 
     //python call return is NULL
     {
-        printf("Python error!!!%s\n", cli->response_header);
-        cli->response_header = str_append(cli->response_header,"HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ");
-        cli->response_header = str_append(cli->response_header, VERSION);
-        cli->response_header = str_append(cli->response_header, "\r\n\r\n"); //TODO: use size_t
+        printf("Python error!!!\n");
+        pydummy = PyString_FromFormat("%s\r\n%s\r\n%s%s\r\n\r\n", "HTTP/1.0 500 Not found","Content-Type: text/html","Server: ", VERSION);
+        cli->response_header = PyString_AsString(pydummy);
+        Py_DECREF(pydummy);
+
         if (cli->response_header == NULL)
         {
             printf("ERROR!!!! Memory allocation error in the Python error handling procedure\n");
+            cli->response_header_length=0;
             goto leave_python_handler;
         } 	
         cli->response_header_length=strlen(cli->response_header);
@@ -360,10 +362,6 @@ int python_handler(struct client *cli)
              PyObject *pysys=PyObject_GetAttrString(py_base_module,"sys");
              PyObject *pystderr=PyObject_GetAttrString(pysys,"stderr");
              Py_DECREF(pysys);
-/*             PyObject *pyclose_method=PyObject_GetAttrString(pystderr, "close");
-             PyObject *pyclose=PyObject_CallFunction(pyclose_method, NULL);
-             Py_DECREF(pyclose_method);
-             Py_DECREF(pyclose);*/
              PyObject *pygetvalue=PyObject_GetAttrString(pystderr, "getvalue");
              Py_DECREF(pystderr);
              PyObject *pyres=PyObject_CallFunction(pygetvalue, NULL);
@@ -498,6 +496,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             if (response) write_cli(cli,response, strlen(response), revents);
             else printf("str_append problem in  2\n");
             stop=1;
+            free(response);
         }
         else if (ret==-500)
         {
@@ -509,6 +508,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             if (response) write_cli(cli,response, strlen(response), revents);
             else printf("str_append problem in  3\n");
             stop=1;
+            free(response);
         }
         else if (ret==-501)
         {
@@ -521,6 +521,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             if (response) write_cli(cli,response, strlen(response), revents);
             else printf("str_append problem in  4\n");
             stop=1;
+            free(response);
         }
         else
         {
@@ -769,8 +770,7 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->cmd=NULL;
     cli->uri_path=NULL;
     cli->wsgi_cb=NULL;
-    cli->response_header=malloc(1);
-    cli->response_header[0]='\0';
+    cli->response_header = NULL;
     cli->response_content=NULL;
     cli->response_content_obj=NULL;
     if (debug)
