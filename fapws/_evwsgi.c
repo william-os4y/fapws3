@@ -51,7 +51,7 @@ int server_name_length;
 char *server_port="8000";
 int sockfd;  // main sock_fd
 int debug=0; //1 full debug detail: 0 nodebug
-char *VERSION;
+char *VERSION = NULL;
 #define BACKLOG 1024     // how many pending connections queue will hold
 char *date_format;
 

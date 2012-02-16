@@ -5,7 +5,7 @@ char * decode_uri(const char *uri);
 
 char * remove_leading_and_trailing_spaces(char* s);
 
-int str_append3(char *dest, char *src1, char *src2, char *src3, int n);
+char *str_append(char *data, char *text );
 
 char *cur_time(char * fmt);
 

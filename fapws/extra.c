@@ -76,38 +76,23 @@ char * remove_leading_and_trailing_spaces(char* s)
 
 
 /*
-This procedure append src to dest
+This procedure append text to data and return the result in new buffer to free!!!! 
+return NULL in case of trouble
 */
-int str_append3(char *dest, char *src1, char *src2, char *src3, int n)
+char *str_append( char *data, char *text)
 {
-
-   int i=0;
-   int ret=1;
-
-   dest[0]='\0';
-   while (*src1!='\0' && ret==1)
-   {
-       *dest++=*src1++;
-       i++;
-       if (i>=n) ret=-1;
-   }
-   while (*src2!='\0' && ret==1)
-   {
-       *dest++=*src2++;
-       i++;
-       if (i>=n) ret=-2;
-   }
-   while (*src3!='\0' && ret==1)
-   {
-       *dest++=*src3++;
-       i++;
-       if (i>=n) ret=-3;
-   }
-   *dest='\0';  
-   if (ret==1) return ret;
-   else return i;
+    char *result;
+    int data_len, text_len;
+    data_len = strlen(data);
+    text_len = strlen(text);
+     
+    result = realloc( data, (data_len + text_len + 1));
+    if (result == NULL) 
+       return NULL;
+    memcpy (result + data_len, text, text_len + 1);
+    result[data_len + text_len + 1] = '\0';
+    return result;
 }
-
 
 
 /*
