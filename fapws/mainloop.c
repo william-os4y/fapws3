@@ -339,9 +339,9 @@ int python_handler(struct client *cli)
     //python call return is NULL
     {
         printf("Python error!!!\n");
-        pydummy = PyString_FromFormat("%s\r\n%s\r\n%s%s\r\n\r\n", "HTTP/1.0 500 Not found","Content-Type: text/html","Server: ", VERSION);
-        cli->response_header = PyString_AsString(pydummy);
-        Py_DECREF(pydummy);
+        char buff[200];
+        sprintf(buff, "HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: %s* \r\n\r\n", VERSION);
+        cli->response_header = buff;
 
         if (cli->response_header == NULL)
         {
@@ -437,7 +437,6 @@ int write_cli(struct client *cli, char *response, size_t len,  int revents)
                     fprintf(stderr, "Connection closed after %i retries\n", cli->retry);
                     return 0; //stop the watcher and close the connection
                 }
-                // XXX We shouldn't sleep in an event-base server.
                 usleep(100000);  //failed but we don't want to close the watcher
             }
             if ((int)r==0)

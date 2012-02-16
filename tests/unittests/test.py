@@ -235,21 +235,18 @@ Hello world
   con.request("GET", "/returnnull")
   response=con.getresponse()
   content=response.read()
-  print response.status
   test("", response.status==200 , content)
 
   print("=== Return None ===")
   con.request("GET", "/returnnone")
   response=con.getresponse()
   content=response.read()
-  print response.status
   test("", response.status==200 , content)
 
   print("=== Return Iter None ===")
   con.request("GET", "/returniternull")
   response=con.getresponse()
   content=response.read()
-  print response.status
   test("start", response.status==200 , content)
 
 print "=================="
