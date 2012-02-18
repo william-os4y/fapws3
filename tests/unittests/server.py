@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import fapws
 import fapws._evwsgi as evwsgi
 from fapws import base
 import time
@@ -8,6 +9,7 @@ import sys
 from fapws.contrib import views, zip, log
 import mybase
 import pprint
+import platform
 
 if len(sys.argv)>1 and sys.argv[1]=="socket":
   import socket
@@ -15,6 +17,14 @@ if len(sys.argv)>1 and sys.argv[1]=="socket":
 else:
   socket_server = False
 
+def displaysystem(environ, start_response):
+    start_response(b'200 OK', [(b'Content-Type',b'text/html')])
+    res="""System: %s<br/>\nPython: %s<br/>\nFapws3: %s"""
+    uname = " ".join(platform.uname())
+    pyversion = platform.python_version()
+    fapwsversion = fapws.version
+    return [res % (uname, pyversion, fapwsversion)] 
+    
 def env(environ, start_response):
     start_response(b'200 OK', [(b'Content-Type',b'text/html')])
     res=[]
@@ -138,6 +148,7 @@ def start():
     evwsgi.wsgi_cb((b"/returnnone", returnnone))
     evwsgi.wsgi_cb((b"/returnnull", returnnull))
     evwsgi.wsgi_cb((b"/returniternull", returniternull))
+    evwsgi.wsgi_cb((b"/system", displaysystem))
 
     evwsgi.set_debug(0)    
     evwsgi.run()

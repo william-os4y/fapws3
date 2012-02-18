@@ -20,9 +20,8 @@ wait_sockets () {
 system_info () {
     #We just provide some info about the system
     echo "################"
-    echo "System: `uname -a`"
-    echo "Python: `python -c "import sys;print(sys.version)"` "
-    echo "Fawps3: `python -c "import fapws;print(fapws.version)"` "
+    echo `wget -q -O -  http://127.0.0.1:8080/system`
+    echo "   "
 }
 
 display_memory () {
