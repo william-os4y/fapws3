@@ -81,10 +81,10 @@ else:
     search_include_dirs.extend(['/usr/include','/usr/local/include','/opt/local/include','/usr/pkg/include/ev'])
 
 version=platform.python_version_tuple()
-if (int(version[0])==2 and int(version[1])>=7) or (int(version[0])>=3):
-    print("Find python 2.7 or higher")
+if (int(version[0])==2 and int(version[1])>=6) or (int(version[0])>=3):
+    print("Find python 2.6 or higher")
 else:
-    print("Fapws has been developped with python 2.7 or higher (even python 3.X). Instead we found python %s.%s" % (version[0], version[1]))
+    print("Fapws has been developped with python 2.6 or higher (even python 3.X). Instead we found python %s.%s" % (version[0], version[1]))
     sys.exit(1)
 
 
@@ -118,7 +118,7 @@ setup(cmdclass = {'build_py': build_py},
       version="0.20",
       description="Fast Asynchronous Python Web Server",
       long_description=readme,
-classifiers=['Development Status :: 4 - Beta','Environment :: Web Environment','License :: OSI Approved :: GNU General Public License (GPL)','Programming Language :: C','Programming Language :: Python :: 2.4','Programming Language :: Python :: 2.5','Programming Language :: Python :: 2.6','Programming Language :: Python :: 2.7','Topic :: Internet :: WWW/HTTP :: HTTP Servers','Topic :: Internet :: WWW/HTTP :: WSGI :: Server'], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+classifiers=['Development Status :: 4 - Beta','Environment :: Web Environment','License :: OSI Approved :: GNU General Public License (GPL)','Programming Language :: C','Programming Language :: Python :: 2.6','Programming Language :: Python :: 2.7','Programming Language :: Python :: 3','Programming Language :: Python :: 3.2','Topic :: Internet :: WWW/HTTP :: HTTP Servers','Topic :: Internet :: WWW/HTTP :: WSGI :: Server'], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
       keywords='',
       author='William',
       author_email='william.os4y@gmail.com',
