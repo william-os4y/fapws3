@@ -27,7 +27,7 @@ system_info () {
 display_memory () {
     if [ "$SERVERPID" ]; then
         echo "################"
-        ps u $SERVERPID
+        ps -u -p $SERVERPID
     fi
 }
 
