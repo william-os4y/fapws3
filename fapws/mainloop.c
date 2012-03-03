@@ -75,6 +75,7 @@ void close_connection(struct client *cli)
 {
     if (debug)
         printf("host=%s,port=%i close_connection:cli:%p, input_header:%p***\n",cli->remote_addr, cli->remote_port, cli, cli->input_header);
+    free(cli->remote_addr);
     free(cli->input_header);
     free(cli->cmd);
     free(cli->uri);
@@ -777,8 +778,8 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->input_pos=0;
     cli->retry=0;
     cli->response_iter_sent=-2;
-    cli->remote_addr=inet_ntoa (client_addr.sin_addr);
-    cli->remote_port=ntohs(client_addr.sin_port);
+    cli->remote_addr = strdup(inet_ntoa(client_addr.sin_addr));
+    cli->remote_port = ntohs(client_addr.sin_port);
     if (setnonblock(cli->fd) < 0)
                 fprintf(stderr, "failed to set client socket to non-blocking");
     ev_io_init(&cli->ev_read,connection_cb,cli->fd,EV_READ);
