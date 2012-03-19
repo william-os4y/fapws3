@@ -31,7 +31,10 @@ struct client {
         char *remote_addr;
         int remote_port;
         char *input_header;
+        int input_header_length;
         char *input_body;
+        PyObject *input_body_obj;
+        int input_body_length;
         size_t input_pos;
         int retry;
         char *uri;
@@ -45,6 +48,7 @@ struct client {
         PyObject *response_content;
         PyObject *response_content_obj;
         PyObject *response_fp; 
+        PyObject *pyenviron;
 };
 
 struct TimerObj {

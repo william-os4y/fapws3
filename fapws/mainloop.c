@@ -82,7 +82,9 @@ void close_connection(struct client *cli)
     free(cli->cmd);
     free(cli->uri);
     free(cli->uri_path);
+    Py_XDECREF(cli->pyenviron);
     Py_XDECREF(cli->response_content);
+    Py_XDECREF(cli->input_body_obj);
     if (cli->response_content_obj!=NULL)
     {
         Py_DECREF(cli->response_content_obj);
@@ -205,30 +207,15 @@ int python_handler(struct client *cli)
 
     if (debug)
          printf("host=%s,port=%i:python_handler:HEADER:\n%s**\n", cli->remote_addr, cli->remote_port, cli->input_header);
-    //  1)initialise environ
-    PyObject *pyenviron_class=PyObject_GetAttrString(py_base_module, "Environ");
-    if (!pyenviron_class)
-    {
-         printf("load Environ failed from base module");
-         PyErr_Print();
-         exit(1);
-    }
-    PyObject *pyenviron=PyObject_CallObject(pyenviron_class, NULL);
-    if (!pyenviron)
-    {
-         printf("Failed to create an instance of Environ\n");
-         PyErr_Print();
-         exit(1);
-    }
-    Py_DECREF(pyenviron_class);
+    
     //  2)transform headers into a dictionary and send it to environ.update_headers
     pydict=header_to_dict(cli);
     if (pydict==Py_None)
     {
-        Py_DECREF(pyenviron);
+        //Py_DECREF(cli->pyenviron);
         return -500;
     }
-    update_environ(pyenviron, pydict, "update_headers");
+    update_environ(cli->pyenviron, pydict, "update_headers");
     Py_DECREF(pydict);   
     //  2bis) we check if the request method is supported
     PyObject *pysupportedhttpcmd = PyObject_GetAttrString(py_base_module, "supported_HTTP_command");
@@ -239,7 +226,7 @@ int python_handler(struct client *cli)
         //return not implemented 
         Py_DECREF(pysupportedhttpcmd);
         Py_DECREF(pydummy);
-        Py_DECREF(pyenviron);
+        //Py_DECREF(cli->pyenviron);
         return -501;
     }
     Py_DECREF(pydummy);
@@ -262,7 +249,7 @@ int python_handler(struct client *cli)
         cli->response_header = PyBytes_AsChar(pydummy);
 	cli->response_header_length=(int)PyBytes_Size(pydummy);
         cli->response_content=PyList_New(0);
-        Py_DECREF(pyenviron);
+        //Py_DECREF(cli->pyenviron);
         return 1;
     }
     Py_DECREF(pysupportedhttpcmd);
@@ -272,7 +259,7 @@ int python_handler(struct client *cli)
          printf("uri not found:%s\n", cli->uri);
          if (py_generic_cb==NULL)
          {
-            Py_DECREF(pyenviron);
+            //Py_DECREF(cli->pyenviron);
             return 0;
          }
          else
@@ -285,19 +272,19 @@ int python_handler(struct client *cli)
     }
     // 4) build path_info, ...
     pydict=py_build_method_variables(cli);
-    update_environ(pyenviron, pydict, "update_uri");
+    update_environ(cli->pyenviron, pydict, "update_uri");
     Py_DECREF(pydict);   
     // 5) in case of POST, put it into the wsgi.input
     if (strcmp(cli->cmd,"POST")==0)
     {
-        ret=manage_header_body(cli, pyenviron);
+        ret=manage_header_body(cli);
         if (ret < 0) {
             return ret;
         }
     }
     //  6) add some request info
     pydict=py_get_request_info(cli);
-    update_environ(pyenviron, pydict, "update_from_request");
+    update_environ(cli->pyenviron, pydict, "update_from_request");
     Py_DECREF(pydict);
     // 7) build response object
     PyObject *pystart_response=PyObject_CallMethod(py_base_module, "Start_response", NULL);
@@ -320,7 +307,7 @@ int python_handler(struct client *cli)
     Py_DECREF(pydummy);
     
     // 8) execute python callbacks with his parameters
-    PyObject *pyarglist = Py_BuildValue("(OO)", pyenviron, pystart_response );
+    PyObject *pyarglist = Py_BuildValue("(OO)", cli->pyenviron, pystart_response );
     cli->response_content = PyEval_CallObject(cli->wsgi_cb,pyarglist);
     Py_DECREF(pyarglist);
     if (cli->response_content!=NULL) 
@@ -401,7 +388,7 @@ int python_handler(struct client *cli)
     }
 leave_python_handler:
     Py_XDECREF(pystart_response);
-    Py_XDECREF(pyenviron);
+    //Py_XDECREF(cli->pyenviron);
     return 1;
 }
 
@@ -698,6 +685,7 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     char rbuff[MAX_BUFF]="";
     int read_finished=0;
     char *err=NULL;
+    PyObject *pydummy;
     if (revents & EV_READ){
         //printf("pass revents\n");
         r=read(cli->fd,rbuff,MAX_BUFF);
@@ -719,32 +707,72 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         } 
         else
         {
-            cli->input_header=realloc(cli->input_header, (cli->input_pos + r + 1)*sizeof(char));
-            memcpy(cli->input_header + cli->input_pos, rbuff, r); 
-            cli->input_pos += r; 
-            cli->input_header[cli->input_pos]='\0';
-            if (debug)
-                printf("host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i\n", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
-            // if \r\n\r\n then end of header   
-            
-            cli->input_body=strstr(cli->input_header, "\r\n\r\n"); //use memmem ???
-            int header_lentgh =cli->input_body-cli->input_header;
-            if (cli->input_body!=NULL)
+            //we have some data to treat
+            if (cli->input_body_obj) 
             {
-                //if content-length
-                char *contentlenght=strstr(cli->input_header, "Content-Length: ");
-                if (contentlenght==NULL)
+                cli->input_pos += r; 
+                //read content is just input_body, nothing else
+                if (debug)
+                    printf("INPUT HEADER CONTINUE: host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i\n", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
+                PyObject *pywrite = PyObject_GetAttrString(cli->input_body_obj, "write");
+                pydummy = PyBytes_FromStringAndSize(rbuff, r);
+                PyObject_CallFunction(pywrite, "(O)", pydummy);   
+                Py_DECREF(pydummy);
+                Py_DECREF(pywrite);
+                
+                //assure we have all body data
+                if ((int)cli->input_pos >= cli->input_body_length + cli->input_header_length)
                 {
-                    read_finished=1;
+                     read_finished = 1;
                 }
-                else 
+            }
+            else
+            { 
+                //we do just read the headers
+                cli->input_header=realloc(cli->input_header, (cli->input_pos + r + 1)*sizeof(char));
+                memcpy(cli->input_header + cli->input_pos, rbuff, r); 
+                cli->input_pos += r; 
+                cli->input_header[cli->input_pos]='\0';
+                if (debug)
+                    printf("host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i\n", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
+                // if \r\n\r\n then end of header   
+                
+                cli->input_body=strstr(cli->input_header, "\r\n\r\n"); //use memmem ???
+                if (cli->input_body!=NULL)
                 {
-                    int bodylength=strtol(contentlenght+16, &err, 10);
-                      //assure we have all body data
-                    if ((int)cli->input_pos>=bodylength+4+header_lentgh)
+                    if (debug)
+                        printf("INPUT HEADER FOUND: host=%s,port=%i connection_cb:cli:%p, input_header:%p, input_pos:%i, r:%i\n", cli->remote_addr, cli->remote_port, cli, cli->input_header, (int)cli->input_pos, (int)r);
+                    cli->input_body+=4; // to skip the \r\n\r\n
+                    cli->input_header_length = cli->input_body - cli->input_header;
+                    //if content-length
+                    char *contentlenght=strstr(cli->input_header, "Content-Length: ");
+                    if (contentlenght==NULL)
                     {
                         read_finished=1;
-                        cli->input_body+=4; // to skip the \r\n\r\n
+                    }
+                    else 
+                    {
+                        cli->input_body_length = strtol(contentlenght + 16, &err, 10);
+                        
+                        //initialise the input_body_obj
+                        cli->input_body_obj = PyDict_GetItemString(cli->pyenviron, "wsgi.input");
+                        Py_INCREF(cli->input_body_obj);
+                        PyObject *pywrite = PyObject_GetAttrString(cli->input_body_obj, "write");
+ 
+                        //put first bytes in it
+                        int input_length, total_length;
+                        total_length =  cli->input_header - cli->input_body;
+                        input_length =  total_length + (int)cli->input_pos;
+                        pydummy = PyBytes_FromStringAndSize(cli->input_body, input_length);
+                        PyObject_CallFunction(pywrite, "(O)", pydummy);   
+                        Py_DECREF(pydummy);
+                        Py_DECREF(pywrite);
+ 
+                        //We could get all body data 
+                        if ((int)cli->input_pos >= cli->input_body_length + cli->input_header_length)
+                        {
+                            read_finished = 1;
+                        }
                     }
                 }
             }
@@ -753,7 +781,19 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
          {
             //printf("read_finished\n");
             ev_io_stop(EV_A_ w);
-            if (strlen(cli->input_header)>0)
+            if (cli->input_body_obj)
+            {
+                PyObject *pystringio_seek=PyObject_GetAttrString(cli->input_body_obj, "seek");
+                if (pystringio_seek) 
+                {
+                    pydummy=PyLong_FromString("0", NULL, 10);
+                    PyObject_CallFunction(pystringio_seek, "(O)", pydummy);
+                    Py_DECREF(pydummy);
+                    Py_DECREF(pystringio_seek);
+                }
+
+            }
+            if (cli->input_header_length>0)
             {
                 ev_io_init(&cli->ev_write,write_cb,cli->fd,EV_WRITE);
                 ev_io_start(loop,&cli->ev_write);
@@ -789,6 +829,9 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->fd=client_fd;
     cli->input_header=malloc(1*sizeof(char));  //will be free'd when we will close the connection
     cli->input_body=NULL;
+    cli->input_body_obj=NULL;
+    cli->input_body_length=0;
+    cli->input_header_length=0;
     cli->uri=NULL;
     cli->cmd=NULL;
     cli->uri_path=NULL;
@@ -805,6 +848,24 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     cli->remote_port = ntohs(client_addr.sin_port);
     if (setnonblock(cli->fd) < 0)
                 fprintf(stderr, "failed to set client socket to non-blocking");
+
+    //initialise environ
+    PyObject *pyenviron_class=PyObject_GetAttrString(py_base_module, "Environ");
+    if (!pyenviron_class)
+    {
+         printf("load Environ failed from base module");
+         PyErr_Print();
+         exit(1);
+    }
+    cli->pyenviron=PyObject_CallObject(pyenviron_class, NULL);
+    if (!cli->pyenviron)
+    {
+         printf("Failed to create an instance of Environ\n");
+         PyErr_Print();
+         exit(1);
+    }
+    Py_DECREF(pyenviron_class);
+
     ev_io_init(&cli->ev_read,connection_cb,cli->fd,EV_READ);
     //printf("accept_cb done\n");
     ev_io_start(loop,&cli->ev_read);
