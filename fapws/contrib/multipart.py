@@ -1,4 +1,5 @@
 import os.path
+import os
 
 class Storage(object):
     def __init__(self):
@@ -9,23 +10,43 @@ class Storage(object):
         pass
     def close(self):
         self.fpath=None #self.fpath allow us to know if the storage repository has to write some data or not
+    def read(self):
+        pass
+    def remove(self):
+        pass
 
 class DiskStorage(Storage):
+    def __init__(self, fpath):
+        self.fpath = fpath
+        self.fid = None
     def open(self, fpath):
         self.fpath=fpath
         if self.fpath:
-            self.fid=open(self.fpath,"wb")
+            self.fid=open(self.fpath,"w+b")
         else:
             raise ValueError("fpath is not declared")
     def write(self, data):
-        if self.fid:
-            self.fid.write(data)
-        else:
-            raise ValueError("First open before writing")
+        if not self.fid:
+            self.open()
+        self.fid.write(data)
     def close(self):
         self.fpath=None
         if self.fid:
             self.fid.close()
+    def read(self, blocksize=None):
+        if not self.fid:
+            self.open()
+        if self.fid:
+            if blocksize:
+                return self.fid.read(blocksize) 
+            else:
+                return self.fid.read()
+    def seek(self, pos):
+        if not self.fid:
+            self.open()
+        self.fid.seek(pos)
+    def remove(self):
+        os.remove(self.fpath)
         
 class DiskVersioning(DiskStorage):
     def _definefilename(self, fpath):
@@ -43,9 +64,22 @@ class DiskVersioning(DiskStorage):
     def open(self, fpath):
         self.fpath=self._definefilename(fpath)
         if self.fpath:
-            self.fid=open(self.fpath,"wb")
+            self.fid=open(self.fpath,"w+b")
         else:
             raise ValueError("fpath is not declared")
+
+class DiskRandom(DiskStorage):
+    def __init__(self, basepath="/tmp"):
+        self.basepath = basepath
+        super(DiskRandom,self).__init__(None)
+    def open(self, name="fapws"):
+        self.fpath = os.tempnam(self.basepath, name)    
+        if self.fpath:
+            self.fid=open(self.fpath,"w+b")
+        else:
+            raise ValueError("fpath is not declared")
+
+
 
 class GitStorage(Storage):
     "Still to develop"
@@ -68,7 +102,7 @@ class MultipartFormData(object):
         self.results={}
         self.boundary=None
         self._inheader=False
-        self.filerepository=DiskVersioning() #per default we use the versioning method
+        self.filerepository=DiskVersioning(basepath) #per default we use the versioning method
     def write(self, data):
         #data can be chunk of the input data or all the input data
         line=b""
@@ -91,8 +125,8 @@ class MultipartFormData(object):
                         paramvalue=content.strip()
                     if self.filerepository.fpath:
                         #we have to close the previous outputfid
+                        paramattr[b'size']=os.path.getsize(self.filerepository.fpath)
                         self.filerepository.close()
-                        paramattr[b'size']=os.path.getsize(paramvalue)
                     if paramkey:
                         self.results.setdefault(paramkey,[])
                         self.results[paramkey].append(paramvalue)
@@ -114,6 +148,7 @@ class MultipartFormData(object):
                                 if pval:
                                     pval = pval.decode('utf8')
                                     self.filerepository.open(self.basepath+pval)
+                                    print("OPEN FIME", self.basepath+pval)
                                     paramvalue=self.filerepository.fpath
                             elif pkey==b"name":
                                 paramkey=pval
@@ -124,13 +159,11 @@ class MultipartFormData(object):
                 elif not self._inheader:
                     if self.filerepository.fpath:
                         self.filerepository.write(line)
+                        print("WRITE:", line)
                     else:
                         content+=line
                 line=b""
             prevchar=char
-    def seek(self, position):
-        #required for compatibility with file like object
-        pass
     def getvalue(self):
         return self.results
     def get(self, key):

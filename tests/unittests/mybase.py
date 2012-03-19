@@ -21,7 +21,7 @@ class Environ(dict):
     def __init__(self, *arg, **kw):
         self['wsgi.version'] = (1, 0)
         self['wsgi.errors'] = BytesIO()
-        self['wsgi.input'] = multipart.MultipartFormData("/tmp/")
+        self['wsgi.input'] = BytesIO()
         self['wsgi.multithread'] = False
         self['wsgi.multiprocess'] = True
         self['wsgi.run_once'] = False

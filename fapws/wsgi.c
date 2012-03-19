@@ -413,11 +413,11 @@ PyObject *py_get_request_info(struct client *cli)
 /*
 In case of POST, we must populate some additional wsgi parameters.
 */
-int manage_header_body(struct client *cli, PyObject *pyenviron)
+int manage_header_body(struct client *cli)
 {
     PyObject *pydummy; 
 
-    pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_LENGTH");
+    pydummy=PyDict_GetItemString(cli->pyenviron,"HTTP_CONTENT_LENGTH");
     if (pydummy==NULL) {
         //a POST without content-length is not a valid 
         if (debug) {
@@ -429,30 +429,16 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     char *content_length_str = PyBytes_AsChar(pydummy);
     int content_length = atoi(content_length_str);
     pydummy = PyLong_FromString(content_length_str, NULL, 10);
-    PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy); 
+    PyDict_SetItemString(cli->pyenviron, "CONTENT_LENGTH", pydummy); 
     Py_DECREF(pydummy);
-
-    PyObject *pystringio=PyDict_GetItemString(pyenviron, "wsgi.input");
-    Py_INCREF(pystringio);
-    PyObject *pystringio_write=PyObject_GetAttrString(pystringio, "write");
-    Py_DECREF(pystringio);
-    pydummy = PyBytes_FromStringAndSize(cli->input_body, content_length);
-    PyObject_CallFunction(pystringio_write, "(O)", pydummy);
-    Py_DECREF(pydummy);
-    Py_DECREF(pystringio_write);
-    PyObject *pystringio_seek=PyObject_GetAttrString(pystringio, "seek");
-    pydummy=PyLong_FromString("0", NULL, 10);
-    PyObject_CallFunction(pystringio_seek, "(O)", pydummy);
-    Py_DECREF(pydummy);
-    Py_DECREF(pystringio_seek);
 
     //fapws.params cannot be done in case of multipart
-    pydummy=PyDict_GetItemString(pyenviron,"HTTP_CONTENT_TYPE");
+    pydummy=PyDict_GetItemString(cli->pyenviron,"HTTP_CONTENT_TYPE");
     if (pydummy!=NULL)
     {
-        PyDict_SetItemString(pyenviron,"CONTENT_TYPE", pydummy);
+        PyDict_SetItemString(cli->pyenviron,"CONTENT_TYPE", pydummy);
     } else {
-        PyDict_SetItemString(pyenviron,"CONTENT_TYPE", Py_None);
+        PyDict_SetItemString(cli->pyenviron,"CONTENT_TYPE", Py_None);
     }
     //no incref because value not needed
     if (pydummy!=NULL)
@@ -461,7 +447,7 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
         if (strncasecmp(ct, "application/x-www-form-urlencoded", 33)==0) 
         { 
             pydummy=parse_query(cli->input_body);
-            PyDict_SetItemString(pyenviron,"fapws.params",pydummy);
+            PyDict_SetItemString(cli->pyenviron,"fapws.params",pydummy);
             Py_DECREF(pydummy);
         }
     }
