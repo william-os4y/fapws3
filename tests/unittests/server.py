@@ -84,11 +84,14 @@ def staticshort(environ, start_response):
 def testpost(environ, start_response):
     print(environ)
     if b"multipart/form-data" in environ['HTTP_CONTENT_TYPE']:
-        res=environ["wsgi.input"].getvalue()
+        environ["wsgi.input"].flush()
+        environ["wsgi.input"].seek(0)
+        res=environ["wsgi.input"].read()
     elif b"application/x-www-form-urlencoded" in environ['HTTP_CONTENT_TYPE']:
         res=environ["fapws.params"]
     else:
         res={}
+    environ["wsgi.input"].close()
     ret = "OK. params are:%s" % (res)
     if sys.version_info[0] > 2:
         return [bytes(ret, "utf-8")]
