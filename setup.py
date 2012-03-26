@@ -89,7 +89,11 @@ if res==False:
     print "Please install the sources of python, or provide the path by setting the shell environmental variable C_INCLUDE_PATH"
     sys.exit(1)
 include_dirs.append(res)
-res=find_file('libev.a',search_library_dirs)
+
+res=find_file('libev.a',search_library_dirs) or\
+        find_file('libev.so', search_library_dirs) or\
+        find_file('libev.la', search_library_dirs) 
+
 if res==False:
     print "We don't find 'libev.so' which is a mandatory file to run Fapws"
     print "Please install libev, or provide the path by setting the shell environmental variable LD_LIBRARY_PATH"
