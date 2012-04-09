@@ -465,7 +465,7 @@ This is the write call back registered within the event loop
 */
 void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 { 
-    char *response = NULL;
+    char response[1024];
     int stop=0; //0: not stop, 1: stop, 2: stop and call tp close
     int ret; //python_handler return
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
@@ -476,52 +476,32 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         if (ret==0) //look for python callback and execute it
         {
             //uri not found
-            response = malloc(1);
-            response[0] = '\0';
-            response = str_append(response, "HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: ");
-            response = str_append(response,  VERSION);
-            response = str_append(response, "\r\n\r\n<html><head><title>Page not found</title></head><body><p>Page not found!!!</p></body></html>");
+            snprintf(response, sizeof(response), "HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: %s\r\n\r\n<html><head><title>Page not found</title></head><body><p>Page not found!!!</p></body></html>", VERSION );
             if (response) write_cli(cli,response, strlen(response), revents);
-            else printf("str_append problem in  1\n");
+            else printf("problem with error 500: Page not found\n");
             stop=1;
-            free(response);
         } 
         else if (ret==-411)
         {
-            response = malloc(1);
-            response[0] = '\0';
-            response = str_append(response,"HTTP/1.0 411 Length Required\r\nContent-Type: text/html\r\nServer: ");
-            response = str_append(response, VERSION);
-            response = str_append(response, "\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>");
+            snprintf(response, sizeof(response), "HTTP/1.0 411 Length Required\r\nContent-Type: text/html\r\nServer: %s\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>", VERSION);
             if (response) write_cli(cli,response, strlen(response), revents);
-            else printf("str_append problem in  2\n");
+            else printf("problem with error 411\n");
             stop=1;
-            free(response);
         }
         else if (ret==-500)
         {
-            response = malloc(1);
-            response[0] = '\0';
-            response = str_append(response,"HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: ");
-            response = str_append(response, VERSION);
-            response = str_append(response, "\r\n\r\n<html><head><title>Internal Server Error</title></head><body><p>Internal Server Error!!!</p></body></html>");
+            snprintf(response, sizeof(response), "HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: %s\r\n\r\n<html><head><title>Internal Server Error</title></head><body><p>Internal Server Error!!!</p></body></html>", VERSION);
             if (response) write_cli(cli,response, strlen(response), revents);
-            else printf("str_append problem in  3\n");
+            else printf("problem with error 500: Internal server error\n");
             stop=1;
-            free(response);
         }
         else if (ret==-501)
         {
             //problem to parse the request
-            response = malloc(1);
-            response[0] = '\0';
-            response = str_append(response,"HTTP/1.0 501 Not Implemented\r\nContent-Type: text/html\r\nServer: ");
-            response = str_append(response, VERSION);
-            response = str_append(response, "\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>");
+            snprintf(response,sizeof(response), "HTTP/1.0 501 Not Implemented\r\nContent-Type: text/html\r\nServer: %s\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>", VERSION);
             if (response) write_cli(cli,response, strlen(response), revents);
-            else printf("str_append problem in  4\n");
+            else printf("problem with error 501\n");
             stop=1;
-            free(response);
         }
         else
         {

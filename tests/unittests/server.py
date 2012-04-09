@@ -96,11 +96,9 @@ def returnnone(environ, start_response):
     return None
 
 def returnnull(environ, start_response):
-    print environ
     start_response('200 OK', [('Content-Type','text/html')])
 
 def returniternull(environ, start_response):
-    print environ
     start_response('200 OK', [('Content-Type','text/html')])
     yield "start"
     yield None
