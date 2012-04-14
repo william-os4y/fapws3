@@ -169,8 +169,7 @@ Hello world
 \r
 ------------------------------6b72468f07eb--\r\n"""  
     response = _raw_send.send(data)
-    test("OK. params are:{'field2': [u'/tmp/short.txt', {'Content-Type': 'text/plain', 'size': 14L}], 'field1': ['this is a test using httppost & stuff']}", 1==1, response)
-
+    test("""------------------------------6b72468f07eb\r\nContent-Disposition: form-data; name="field1"\r\n\r\nthis is a test using httppost & stuff\r\n------------------------------6b72468f07eb\r\nContent-Disposition: form-data; name="field2"; filename="short.txt"\r\nContent-Type: text/plain\r\n\r\nHello world\n\r\n------------------------------6b72468f07eb--\r\n""", 1==1, response)
   print("=== Options ===")
   con.request("OPTIONS", "/")
   response=con.getresponse()
@@ -237,6 +236,23 @@ Hello world
   content=response.read()
   test("totototototo", response.status==200 , content)
   
+  print("=== Return Null ===")
+  con.request("GET", "/returnnull")
+  response=con.getresponse()
+  content=response.read()
+  test("", response.status==200 , content)
+
+  print("=== Return None ===")
+  con.request("GET", "/returnnone")
+  response=con.getresponse()
+  content=response.read()
+  test("", response.status==200 , content)
+
+  print("=== Return Iter None ===")
+  con.request("GET", "/returniternull")
+  response=con.getresponse()
+  content=response.read()
+  test("start", response.status==200 , content)
 
 
 print("==================")
