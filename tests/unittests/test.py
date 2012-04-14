@@ -169,7 +169,7 @@ Hello world
 \r
 ------------------------------6b72468f07eb--\r\n"""  
     response = _raw_send.send(data)
-    test(b"OK. params are:{b'field2': ['/tmp/short.txt', {b'Content-Type': b'text/plain', b'size': 14}], b'field1': [b'this is a test using httppost & stuff']}", 1==1, response)
+    test(b'------------------------------6b72468f07eb\\r\\nContent-Disposition: form-data; name="field1"\\r\\n\\r\\nthis is a test using httppost & stuff\\r\\n------------------------------6b72468f07eb\\r\\nContent-Disposition: form-data; name="field2"; filename="short.txt"\\r\\nContent-Type: text/plain\\r\\n\\r\\nHello world\\n\\r\\n------------------------------6b72468f07eb--\\r\\n', 1==1, response)
 
   print("=== Options ===")
   con.request("OPTIONS", "/")
