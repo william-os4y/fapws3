@@ -427,7 +427,6 @@ int manage_header_body(struct client *cli)
         return -411;
     }
     char *content_length_str = PyBytes_AsChar(pydummy);
-    int content_length = atoi(content_length_str);
     pydummy = PyLong_FromString(content_length_str, NULL, 10);
     PyDict_SetItemString(cli->pyenviron, "CONTENT_LENGTH", pydummy); 
     Py_DECREF(pydummy);
