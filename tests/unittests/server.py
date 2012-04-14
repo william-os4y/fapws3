@@ -145,6 +145,8 @@ def start():
     evwsgi.wsgi_cb((b"/elong", embedlong))
     evwsgi.wsgi_cb((b"/short", staticshort))
     staticform=views.Staticfile(b"test.html")
+    staticform2=views.Staticfile(b"test2.html")
+    evwsgi.wsgi_cb((b"/staticform2", staticform2))
     evwsgi.wsgi_cb((b"/staticform", staticform))
     evwsgi.wsgi_cb((b"/testpost", testpost))
     evwsgi.wsgi_cb((b"/badscript", badscript))
