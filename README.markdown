@@ -85,6 +85,13 @@ Stiletto : implementation of tuple
 
 Keith : Implementation of sockets
 
+William Dignazio : setup.py improvement https://github.com/william-os4y/fapws3/pull/35
+
+Yangshe1990 : wrong remote_addr https://github.com/william-os4y/fapws3/pull/34
+
+
+
+
 License
 -------
 

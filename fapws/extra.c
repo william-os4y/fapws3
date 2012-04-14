@@ -76,26 +76,6 @@ char * remove_leading_and_trailing_spaces(char* s)
 
 
 /*
-This procedure append text to data and return the result in new buffer to free!!!! 
-return NULL in case of trouble
-*/
-char *str_append( char *data, char *text)
-{
-    char *result;
-    int data_len, text_len;
-    data_len = strlen(data);
-    text_len = strlen(text);
-     
-    result = realloc( data, (data_len + text_len + 1));
-    if (result == NULL) 
-       return NULL;
-    memcpy (result + data_len, text, text_len + 1);
-    result[data_len + text_len + 1] = '\0';
-    return result;
-}
-
-
-/*
 Provide a string representation of the current time
 */
 char *cur_time(char *fmt)
