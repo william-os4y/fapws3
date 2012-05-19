@@ -274,8 +274,8 @@ int python_handler(struct client *cli)
     pydict=py_build_method_variables(cli);
     update_environ(cli->pyenviron, pydict, "update_uri");
     Py_DECREF(pydict);   
-    // 5) in case of POST, put it into the wsgi.input
-    if (strcmp(cli->cmd,"POST")==0)
+    // 5) in case of POST or POST, put it into the wsgi.input
+    if ((strcmp(cli->cmd,"POST")==0) || (strcmp(cli->cmd,"PUT")==0))
     {
         ret=manage_header_body(cli);
         if (ret < 0) {

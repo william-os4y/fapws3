@@ -146,7 +146,7 @@ def redirectStdErr():
     """
     sys.stderr = StringIO()
 
-supported_HTTP_command = [b"GET", b"POST", b"HEAD", b"OPTIONS"]
+supported_HTTP_command = [b"GET", b"POST", b"HEAD", b"OPTIONS", b"PUT", b"DELETE", b"TRACE"]
 
 
 def split_len(seq, length):

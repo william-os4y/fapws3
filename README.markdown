@@ -89,7 +89,7 @@ William Dignazio : setup.py improvement https://github.com/william-os4y/fapws3/p
 
 Yangshe1990 : wrong remote_addr https://github.com/william-os4y/fapws3/pull/34
 
-
+Lindell : Propose patches to better support REST commands
 
 
 License
