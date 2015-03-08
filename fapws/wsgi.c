@@ -210,7 +210,6 @@ PyObject * header_to_dict (struct client *cli)
    PyDict_SetItemString(pydict, "fapws.raw_header", pyval);
    Py_DECREF(pyval);
 
-   
    len=strlen(buf);
    data=malloc(len);
    buf2=malloc(len);
@@ -240,7 +239,7 @@ PyObject * header_to_dict (struct client *cli)
          break;
      case s_firstline_w1:
          set_char(buf, data, i, &j);
-         if (ch=='?') sw_query_string=j+1;
+         if (ch=='?') sw_query_string=j;
          if (ch==BLANK)
          { 
            state=s_firstline_w2;
@@ -253,7 +252,7 @@ PyObject * header_to_dict (struct client *cli)
            assert(cli->uri);
            strcpy(cli->uri, data);   // will be cleaned with cli
            char *query_string;
-           query_string=data+sw_query_string-1;
+           query_string=data+sw_query_string;
            //printf("QUERY_STRING:%s***\n", query_string);
            pyval = Py_BuildValue("s",query_string);
            PyDict_SetItemString(pydict, "QUERY_STRING", pyval);
