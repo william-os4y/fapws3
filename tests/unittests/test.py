@@ -163,7 +163,7 @@ Hello world
 ------------------------------6b72468f07eb--\r\n"""  
     response = _raw_send.send(data)
     print "response", response
-    test("OK. params are:{'field2': ['/tmp/short.txt', {'Content-Type': 'text/plain', 'size': 14L}], 'field1': ['this is a test using httppost & stuff']}", 1==1, response)
+    test("OK. params are:{'field2': ['/tmp/short.txt', {'Content-Type': 'text/plain', 'size': 14}], 'field1': ['this is a test using httppost & stuff']}", 1==1, response)
 
   print "=== Options ==="
   con.request("OPTIONS", "/")
