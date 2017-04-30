@@ -30,6 +30,7 @@ class Staticfile:
 
     def __call__(self, environ, start_response):
         fpath = self.rootpath + environ['PATH_INFO']
+        fpath = fpath.replace('..','')
         try:
             f = open(fpath, "rb")
         except:
