@@ -28,7 +28,6 @@ extern PyObject *pydeferqueue;
 extern PyObject *py_base_module;  //to store the fapws.base python module
 extern PyObject *py_config_module; //to store the fapws.config module
 extern PyObject *py_registered_uri; //list containing the uri registered and their associated wsgi callback.
-#define MAX_BUFF 32768  //read buffer size. bigger faster, but memory foot print bigger
 #define MAX_RETRY 9   //number of connection retry
 
 extern char * VERSION;
@@ -77,6 +76,7 @@ void close_connection(struct client *cli)
         printf("host=%s,port=%i close_connection:cli:%p, input_header:%p***\n",cli->remote_addr, cli->remote_port, cli, cli->input_header);
     free(cli->remote_addr);
     free(cli->input_header);
+    free(cli->response_header);
     free(cli->cmd);
     free(cli->uri);
     free(cli->uri_path);
@@ -200,6 +200,8 @@ int python_handler(struct client *cli)
 {
     PyObject *pydict, *pydummy;
     int ret;
+    char buff[HEADER_MAXLEN];
+    char *tmp;
 
     if (debug)
          printf("host=%s,port=%i:python_handler:HEADER:\n%s**\n", cli->remote_addr, cli->remote_port, cli->input_header);
@@ -234,11 +236,11 @@ int python_handler(struct client *cli)
     {
         //return not implemented 
         Py_DECREF(pysupportedhttpcmd);
-        Py_DECREF(pydummy);
+        Py_XDECREF(pydummy);
         Py_DECREF(pyenviron);
         return -501;
     }
-    Py_DECREF(pydummy);
+    Py_XDECREF(pydummy);
     //  2ter) we treat directly the OPTIONS command
     if (strcmp(cli->cmd,"OPTIONS")==0)
     {
@@ -249,14 +251,21 @@ int python_handler(struct client *cli)
         for (index=0; index<max; index++)
         {
             pyitem=PyList_GetItem(pysupportedhttpcmd, index);  // no need to decref pyitem
-            PyString_Concat(&pydummy, PyObject_Str(pyitem));
+            PyString_ConcatAndDel(&pydummy, PyObject_Str(pyitem));
             if (index<max-1)
-               PyString_Concat(&pydummy, PyString_FromString(", "));
+               PyString_ConcatAndDel(&pydummy, PyString_FromString(", "));
         }
-        PyString_Concat(&pydummy, PyString_FromString("\r\nContent-Length: 0\r\n\r\n"));
-        cli->response_header = PyString_AsString(pydummy);
-	cli->response_header_length=(int)PyString_Size(pydummy);
+        PyString_ConcatAndDel(&pydummy, PyString_FromString("\r\nContent-Length: 0\r\n\r\n"));
+	memset(buff,0,HEADER_MAXLEN);
+        tmp = PyString_AsString(pydummy);
+	cli->response_header_length = (int)PyString_Size(pydummy);
+	memcpy(buff,tmp,cli->response_header_length);
+        cli->response_header = realloc(cli->response_header, (cli->response_header_length + 1)*sizeof(char));  	
+	memcpy(cli->response_header, buff, cli->response_header_length);
+	cli->response_header[cli->response_header_length]='\0';
         cli->response_content=PyList_New(0);
+        Py_DECREF(pysupportedhttpcmd);
+        Py_DECREF(pydummy);
         Py_DECREF(pyenviron);
         return 1;
     }
@@ -332,15 +341,21 @@ int python_handler(struct client *cli)
     if (cli->response_content!=NULL) 
     {
         PyObject *pydummy = PyObject_Str(pystart_response);
-        cli->response_header = PyString_AsString(pydummy);
+	memset(buff,0,HEADER_MAXLEN);
+        tmp = PyString_AsString(pydummy);
 	cli->response_header_length = (int)PyString_Size(pydummy);
+	memcpy(buff,tmp,cli->response_header_length);
+        cli->response_header = realloc(cli->response_header, (cli->response_header_length + 1)*sizeof(char));  	
+	memcpy(cli->response_header, buff, cli->response_header_length);
+	cli->response_header[cli->response_header_length]='\0';
+	if (debug) 
+	     printf("Response header length: Python length=%i; string len=%i, address:%p\n",cli->response_header_length, strlen(cli->response_header), cli->response_header);
         Py_DECREF(pydummy);
     }
     else 
     //python call return is NULL
     {
         printf("Python error!!!\n");
-        char buff[200];
         sprintf(buff, "HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: %s* \r\n\r\n", VERSION);
         cli->response_header = buff;
 
@@ -410,7 +425,7 @@ int write_cli(struct client *cli, char *response, size_t len,  int revents)
        error we should exit and wait for an EV_WRITE event. You can think about
        slow client or some client which holds a socket but don't read from one.
      */
-    size_t r=0, sent_len=MAX_BUFF;
+    size_t r=0, sent_len=HEADER_MAXLEN;
     int c=0;
     if (revents & EV_WRITE){
         //printf("write_cli:uri=%s**\n", cli->uri);
@@ -468,6 +483,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     char response[1024];
     int stop=0; //0: not stop, 1: stop, 2: stop and call tp close
     int ret; //python_handler return
+    char *tmp;
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_write)));
     if (cli->response_iter_sent==-2)
     { 
@@ -525,17 +541,16 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             if (cli->response_iter_sent<(tuple ? PyTuple_Size(cli->response_content) : PyList_Size(cli->response_content))) 
             {
                 PyObject *pydummy = tuple ? PyTuple_GetItem(cli->response_content, cli->response_iter_sent) : PyList_GetItem(cli->response_content, cli->response_iter_sent);
-                char *buff;
 #if (PY_VERSION_HEX < 0x02050000)
-                int buflen;
-                if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
+                int tmplen;
+                if (PyObject_AsReadBuffer(pydummy, (const void **) &tmp, &tmplen)==0)
 #else
-                Py_ssize_t buflen;
-                if (PyObject_AsReadBuffer(pydummy, (const void **) &buff, &buflen)==0)
+                Py_ssize_t tmplen;
+                if (PyObject_AsReadBuffer(pydummy, (const void **) &tmp, &tmplen)==0)
 #endif
                 {
                     // if this is a readable buffer, we send it. Other else, we ignore it.
-                    if (write_cli(cli, buff, buflen, revents)==0)
+                    if (write_cli(cli, tmp, tmplen, revents)==0)
                     {
                         cli->response_iter_sent = tuple ? PyTuple_Size(cli->response_content) : PyList_Size(cli->response_content);  //break the for loop
                     }
@@ -556,8 +571,8 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 cli->response_fp=PyFile_AsFile(cli->response_content);
             }
             cli->response_iter_sent++;
-            char buff[MAX_BUFF]="";  
-            size_t len=fread(buff, sizeof(char), MAX_BUFF, cli->response_fp);
+            char buff[HEADER_MAXLEN]="";  
+            size_t len=fread(buff, sizeof(char), HEADER_MAXLEN, cli->response_fp);
             if ((int)len==0)
             {
                 stop=2;
@@ -568,7 +583,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
                 {
                     stop=2;
                 }
-                if ((int)len<MAX_BUFF)
+                if ((int)len<HEADER_MAXLEN)
                 {
                     //we have send the whole file
                     stop=2;
@@ -620,7 +635,7 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         } 
         else 
         {
-            printf("wsgi output of is neither a list, neither a fileobject, neither an iterable object!!!!!\n");
+            printf("wsgi output is neither a list, neither a fileobject, neither an iterable object!!!!!\n");
             //PyErr_SetString(PyExc_TypeError, "Result must be a list, a fileobject or an iterable object");
             stop=1;
         }
@@ -652,12 +667,12 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 { 
     struct client *cli= ((struct client*) (((char*)w) - offsetof(struct client,ev_read)));
     size_t r=0;
-    char rbuff[MAX_BUFF]="";
+    char rbuff[HEADER_MAXLEN]="";
     int read_finished=0;
     char *err=NULL;
     if (revents & EV_READ){
         //printf("pass revents\n");
-        r=read(cli->fd,rbuff,MAX_BUFF);
+        r=read(cli->fd,rbuff,HEADER_MAXLEN);
         //printf("read %i bytes\n", r);
         if ((int)r<0) {
             fprintf(stderr, "Failed to read the client data. %i tentative\n", cli->retry);
@@ -689,7 +704,7 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
             if (cli->input_body!=NULL)
             {
                 //if content-length
-                char *contentlenght=strstr(cli->input_header, "Content-Length: ");
+                char *contentlenght=strstr(cli->input_header, "Content-Length:");
                 if (contentlenght==NULL)
                 {
                     read_finished=1;
@@ -729,7 +744,7 @@ void connection_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 }
 
 /*
-This is the accept call back registered in the event loop
+This is the accept callback registered in the event loop
 */
 void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
 {
@@ -744,13 +759,13 @@ void accept_cb(struct ev_loop *loop, struct ev_io *w, int revents)
     //intialisation of the client struct
     cli = calloc(1,sizeof(struct client));
     cli->fd=client_fd;
-    cli->input_header=malloc(1*sizeof(char));  //will be free'd when we will close the connection
-    cli->input_body=NULL;
-    cli->uri=NULL;
+    cli->input_header=calloc(1,sizeof(char));  //will be free'd when we will close the connection
+    cli->input_body=NULL; //pointer to last part of input_header
+    cli->uri=NULL; //malloc(URI_MAXLEN*sizeof(char));
     cli->cmd=NULL;
-    cli->uri_path=NULL;
+    cli->uri_path=NULL; //will be calloc later
     cli->wsgi_cb=NULL;
-    cli->response_header = NULL;
+    cli->response_header = malloc(1*sizeof(char)); //NULL;
     cli->response_content=NULL;
     cli->response_content_obj=NULL;
     if (debug)

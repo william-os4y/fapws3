@@ -2,7 +2,8 @@
 #include <Python.h>
 
 
-#define MAXHEADER 4096
+#define URI_MAXLEN 2048
+#define HEADER_MAXLEN 16384
 
 
 /*

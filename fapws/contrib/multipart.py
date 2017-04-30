@@ -83,7 +83,7 @@ class MultipartFormData(object):
                 if self.boundary==None and line[:2]=="--":
                     #we have found a boudary. This will be used for the rest of the parser
                     self.boundary=line.strip()
-                if self.boundary in line:
+                if self.boundary and self.boundary in line:
                     self._inheader=True
                     if content and not paramvalue:
                         paramvalue=content.strip()

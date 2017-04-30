@@ -295,6 +295,7 @@ PyObject * header_to_dict (struct client *cli)
            //printf("KEY:%s***\n",data);
            transform_header_key_to_wsgi_key(data, buf2);
            pyheader_key=Py_BuildValue("s",buf2);
+	   //printf("KEY:%s\n", PyString_AsString(pyheader_key));
            
          }
          break;
@@ -303,11 +304,17 @@ PyObject * header_to_dict (struct client *cli)
          if (ch==CR)
          { 
            state=s_header_key;
-           data[j-1]='\0';
+           if (j>0)
+	   {
+		data[j-1]='\0';
+                pyval = Py_BuildValue("s",data);
+	   } else {
+		pyval = PyString_FromString("");
+	   }
            j=0;
            //printf("VAL:%s***\n",data);
-           pyval = Py_BuildValue("s",data);
            PyDict_SetItem(pydict, pyheader_key, pyval);
+	   //printf("VAL:%s\n", PyString_AsString(pyval));
            Py_DECREF(pyval);
            Py_DECREF(pyheader_key);
          }
@@ -420,8 +427,9 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     }
     char *content_length_str = PyString_AsString(pydummy);
     int content_length = atoi(content_length_str);
-    pydummy = PyInt_FromString(content_length_str, NULL, 10);
-    PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy); 
+    pydummy = PyInt_FromLong(content_length);
+    PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy);
+    free(content_length_str); 
     Py_DECREF(pydummy);
 
     PyObject *pystringio=PyDict_GetItemString(pyenviron, "wsgi.input");
