@@ -429,7 +429,6 @@ int manage_header_body(struct client *cli, PyObject *pyenviron)
     int content_length = atoi(content_length_str);
     pydummy = PyInt_FromLong(content_length);
     PyDict_SetItemString(pyenviron, "CONTENT_LENGTH", pydummy);
-    free(content_length_str); 
     Py_DECREF(pydummy);
 
     PyObject *pystringio=PyDict_GetItemString(pyenviron, "wsgi.input");
