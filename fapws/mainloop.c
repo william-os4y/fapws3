@@ -493,30 +493,26 @@ void write_cb(struct ev_loop *loop, struct ev_io *w, int revents)
         {
             //uri not found
             snprintf(response, sizeof(response), "HTTP/1.0 500 Not found\r\nContent-Type: text/html\r\nServer: %s\r\n\r\n<html><head><title>Page not found</title></head><body><p>Page not found!!!</p></body></html>", VERSION );
-            if (response) write_cli(cli,response, strlen(response), revents);
-            else printf("problem with error 500: Page not found\n");
+            write_cli(cli,response, strlen(response), revents);
             stop=1;
         } 
         else if (ret==-411)
         {
             snprintf(response, sizeof(response), "HTTP/1.0 411 Length Required\r\nContent-Type: text/html\r\nServer: %s\r\n\r\n<html><head><title>Length Required</head><body><p>Length Required!!!</p></body></html>", VERSION);
-            if (response) write_cli(cli,response, strlen(response), revents);
-            else printf("problem with error 411\n");
+            write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
         else if (ret==-500)
         {
             snprintf(response, sizeof(response), "HTTP/1.0 500 Internal Server Error\r\nContent-Type: text/html\r\nServer: %s\r\n\r\n<html><head><title>Internal Server Error</title></head><body><p>Internal Server Error!!!</p></body></html>", VERSION);
-            if (response) write_cli(cli,response, strlen(response), revents);
-            else printf("problem with error 500: Internal server error\n");
+            write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
         else if (ret==-501)
         {
             //problem to parse the request
             snprintf(response,sizeof(response), "HTTP/1.0 501 Not Implemented\r\nContent-Type: text/html\r\nServer: %s\r\n\r\n<html><head><title>Not Implemented</head><body><p>Not Implemented!!!</p></body></html>", VERSION);
-            if (response) write_cli(cli,response, strlen(response), revents);
-            else printf("problem with error 501\n");
+            write_cli(cli,response, strlen(response), revents);
             stop=1;
         }
         else
